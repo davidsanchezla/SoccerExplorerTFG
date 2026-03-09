@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "799878364126",
+    "project_id": "soccerexplorer-2dd41",
+    "storage_bucket": "soccerexplorer-2dd41.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799878364126:android:170e09aa66c93ff60c7b4f",
+        "android_client_info": {
+          "package_name": "com.example.soccerexplorer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB67PiQnpBmVVVNjKjYB7y3-8oyOjt6msw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
