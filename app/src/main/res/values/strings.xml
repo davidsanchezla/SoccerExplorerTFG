@@ -2,12 +2,12 @@
     <string name="app_name">SoccerExplorer</string>
     <string name="register_title">Crear cuenta</string>
     <string name="register_subtitle">Completa tus datos para registrarte.</string>
-    <string name="register_username_label">Correo electronico</string>
-    <string name="register_username_hint">Introduce tu correo electronico</string>
-    <string name="register_password_label">Contrasena</string>
+    <string name="register_username_label">Correo electronico:</string>
+    <string name="register_username_hint">Ejemplo: usuario@dominio.com</string>
+    <string name="register_password_label">Contrasena:</string>
     <string name="register_password_hint">Minimo 8 caracteres, 1 mayuscula y 1 numero</string>
-    <string name="register_repeat_password_label">Repite contrasena</string>
-    <string name="register_repeat_password_hint">Vuelve a escribir la contrasena</string>
+    <string name="register_repeat_password_label">Repetir contrasena:</string>
+    <string name="register_repeat_password_hint">Repite tu contrasena</string>
     <string name="register_button">Registrar</string>
     <string name="register_login_link">¿Ya tienes cuenta? Iniciar sesion</string>
 
@@ -21,11 +21,12 @@
     <string name="register_success_placeholder">Datos validos. Aqui se registrara el usuario con su correo.</string>
     <string name="login_placeholder_message">Pantalla pendiente: LoginActivity con activity_login.xml.</string>
     <string name="login_title">Iniciar sesion</string>
-    <string name="login_subtitle">Accede con tu usuario y contrasena</string>
-    <string name="hint_email">Usuario (email)</string>
-    <string name="hint_password">Contrasena</string>
+    <string name="login_subtitle">Accede con tu correo y contrasena</string>
+    <string name="hint_email">Correo electronico:</string>
+    <string name="hint_password">Contrasena:</string>
     <string name="remember_password">Recordar contrasena</string>
     <string name="action_login">Entrar</string>
+    <string name="login_register_link">¿No tienes cuenta? Registrate</string>
     <string name="error_required">Campo obligatorio</string>
     <string name="error_invalid_credentials">Usuario o contrasena incorrecta</string>
     <string name="home_welcome">Bienvenido a SoccerExplorer</string>

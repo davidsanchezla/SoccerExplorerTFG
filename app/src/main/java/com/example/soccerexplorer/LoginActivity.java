@@ -66,6 +66,12 @@ public class LoginActivity extends AppCompatActivity {
         cbRememberPassword = findViewById(R.id.cbRememberPassword);
         tvLoginError = findViewById(R.id.tvLoginError);
         btnLogin = findViewById(R.id.btnLogin);
+        TextView tvRegisterLink = findViewById(R.id.tvRegisterLink);
+
+        tvRegisterLink.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void setupFieldListeners() {
