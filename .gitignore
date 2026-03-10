@@ -1,15 +1,25 @@
+# Proyectos Android (Gradle)
+.gradle/
+/build/
+/app/build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
+*.iws
+
+# Salidas y temporales
+*.apk
+*.aar
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+bin/
+gen/
+out/
+
+# Basura del sistema
+.DS_Store
+Thumbs.db
+*.log
