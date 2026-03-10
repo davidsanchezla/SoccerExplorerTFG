@@ -1,6 +1,5 @@
 package com.example.soccerexplorer;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -43,14 +42,8 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
         tvLoginLink.setOnClickListener(v -> {
-            Intent intent = new Intent();
-            intent.setClassName(RegisterActivity.this,
-                    "com.example.soccerexplorer.LoginActivity");
-            try {
-                startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                Toast.makeText(this, R.string.login_placeholder_message, Toast.LENGTH_SHORT).show();
-            }
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            startActivity(intent);
         });
     }
 
