@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">SoccerExplorer</string>
+    <string name="login_title">Iniciar sesion</string>
+    <string name="login_subtitle">Accede con tu usuario y contrasena</string>
+    <string name="hint_email">Usuario (email)</string>
+    <string name="hint_password">Contrasena</string>
+    <string name="remember_password">Recordar contrasena</string>
+    <string name="action_login">Entrar</string>
+    <string name="error_required">Campo obligatorio</string>
+    <string name="error_invalid_credentials">Usuario o contrasena incorrecta</string>
+    <string name="home_welcome">Bienvenido a SoccerExplorer</string>
 </resources>
