@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">SoccerExplorer</string>
+    <string name="register_title">Crear cuenta</string>
+    <string name="register_subtitle">Completa tus datos para registrarte.</string>
+    <string name="register_username_label">Correo electronico</string>
+    <string name="register_username_hint">Introduce tu correo electronico</string>
+    <string name="register_password_label">Contrasena</string>
+    <string name="register_password_hint">Minimo 8 caracteres, 1 mayuscula y 1 numero</string>
+    <string name="register_repeat_password_label">Repite contrasena</string>
+    <string name="register_repeat_password_hint">Vuelve a escribir la contrasena</string>
+    <string name="register_button">Registrar</string>
+    <string name="register_login_link">¿Ya tienes cuenta? Iniciar sesion</string>
+
+    <string name="error_email_required">El correo electronico es obligatorio.</string>
+    <string name="error_email_format">Introduce un correo valido (ej: nombre@dominio.com).</string>
+    <string name="error_password_required">La contrasena es obligatoria.</string>
+    <string name="error_password_rules">La contrasena debe tener minimo 8 caracteres, una mayuscula y un numero.</string>
+    <string name="error_repeat_password_required">Debes repetir la contrasena.</string>
+    <string name="error_password_mismatch">Las contrasenas no coinciden.</string>
+
+    <string name="register_success_placeholder">Datos validos. Aqui se registrara el usuario con su correo.</string>
+    <string name="login_placeholder_message">Pantalla pendiente: LoginActivity con activity_login.xml.</string>
 </resources>
