@@ -18,7 +18,7 @@
     <string name="error_repeat_password_required">Debes repetir la contrasena.</string>
     <string name="error_password_mismatch">Las contrasenas no coinciden.</string>
 
-    <string name="register_success_placeholder">Datos validos. Aqui se registrara el usuario con su correo.</string>
+    <string name="register_success">Usuario registrado correctamente.</string>
     <string name="login_placeholder_message">Pantalla pendiente: LoginActivity con activity_login.xml.</string>
     <string name="login_title">Iniciar sesion</string>
     <string name="login_subtitle">Accede con tu correo y contrasena</string>
@@ -29,5 +29,8 @@
     <string name="login_register_link">¿No tienes cuenta? Registrate</string>
     <string name="error_required">Campo obligatorio</string>
     <string name="error_invalid_credentials">Usuario o contrasena incorrecta</string>
+    <string name="error_email_already_exists">Este correo ya esta registrado.</string>
+    <string name="error_register_generic">No se pudo registrar el usuario. Intentalo de nuevo.</string>
+    <string name="error_save_user_db">Usuario creado en Auth, pero fallo al guardar en Firestore.</string>
     <string name="home_welcome">Bienvenido a SoccerExplorer</string>
 </resources>
