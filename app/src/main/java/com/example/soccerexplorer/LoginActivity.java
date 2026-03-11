@@ -10,6 +10,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,15 +18,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
 
+    // region Variables
     private static final String PREFS_NAME = "login_prefs";
     private static final String KEY_REMEMBER = "remember_password";
     private static final String KEY_EMAIL = "remembered_email";
     private static final String KEY_PASSWORD = "remembered_password";
 
     private FirebaseAuth firebaseAuth;
+    private FirebaseFirestore firestore;
     private SharedPreferences sharedPreferences;
 
     private TextInputLayout tilEmail;
@@ -35,30 +40,39 @@ public class LoginActivity extends AppCompatActivity {
     private CheckBox cbRememberPassword;
     private TextView tvLoginError;
     private Button btnLogin;
+    // endregion
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // region Inicializacion
         firebaseAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        // endregion
 
-        bindViews();
-        loadRememberedCredentials();
-        setupFieldListeners();
+        // region UI
+        vincularVistas();
+        cargarCredencialesRecordadas();
+        configurarListenersCampos();
+        // endregion
 
-        btnLogin.setOnClickListener(v -> attemptLogin());
+        // region Listeners
+        btnLogin.setOnClickListener(v -> intentarLogin());
         etPassword.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
-                attemptLogin();
+                intentarLogin();
                 return true;
             }
             return false;
         });
+        // endregion
     }
 
-    private void bindViews() {
+    // region UI
+    private void vincularVistas() {
         tilEmail = findViewById(R.id.tilEmail);
         tilPassword = findViewById(R.id.tilPassword);
         etEmail = findViewById(R.id.etEmail);
@@ -74,7 +88,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void setupFieldListeners() {
+    private void configurarListenersCampos() {
         TextWatcher clearErrorWatcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -86,8 +100,8 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                clearInputErrors();
-                hideLoginError();
+                limpiarErroresInputs();
+                ocultarErrorLogin();
             }
         };
 
@@ -95,7 +109,7 @@ public class LoginActivity extends AppCompatActivity {
         etPassword.addTextChangedListener(clearErrorWatcher);
     }
 
-    private void loadRememberedCredentials() {
+    private void cargarCredencialesRecordadas() {
         boolean rememberPassword = sharedPreferences.getBoolean(KEY_REMEMBER, false);
         cbRememberPassword.setChecked(rememberPassword);
 
@@ -104,13 +118,15 @@ public class LoginActivity extends AppCompatActivity {
             etPassword.setText(sharedPreferences.getString(KEY_PASSWORD, ""));
         }
     }
+    // endregion
 
-    private void attemptLogin() {
-        String email = getText(etEmail).trim();
-        String password = getText(etPassword);
+    // region Login
+    private void intentarLogin() {
+        String email = obtenerTexto(etEmail).trim();
+        String password = obtenerTexto(etPassword);
 
-        clearInputErrors();
-        hideLoginError();
+        limpiarErroresInputs();
+        ocultarErrorLogin();
 
         boolean hasErrors = false;
 
@@ -135,33 +151,59 @@ public class LoginActivity extends AppCompatActivity {
                     btnLogin.setEnabled(true);
 
                     if (task.isSuccessful()) {
-                        handleRememberPassword(email, password);
-                        navigateToMain();
+                        gestionarRecordarContrasena(email, password);
+                        resolverNavegacionPostLogin();
                         return;
                     }
 
-                    showInvalidCredentialsError();
+                    mostrarErrorCredencialesInvalidas();
                 });
     }
 
-    private void showInvalidCredentialsError() {
+    private void resolverNavegacionPostLogin() {
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, R.string.error_invalid_credentials, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        firestore.collection("users")
+                .document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Boolean onboardingCompleted = documentSnapshot.getBoolean("onboardingCompleted");
+                    if (Boolean.TRUE.equals(onboardingCompleted)) {
+                        navegarAPrincipal();
+                        return;
+                    }
+
+                    navegarAElegirEquipoFavorito();
+                })
+                .addOnFailureListener(e -> navegarAElegirEquipoFavorito());
+    }
+    // endregion
+
+    // region Errores UI
+    private void mostrarErrorCredencialesInvalidas() {
         tvLoginError.setText(R.string.error_invalid_credentials);
         tvLoginError.setVisibility(View.VISIBLE);
         tilEmail.setError(" ");
         tilPassword.setError(" ");
     }
 
-    private void hideLoginError() {
+    private void ocultarErrorLogin() {
         tvLoginError.setText("");
         tvLoginError.setVisibility(View.GONE);
     }
 
-    private void clearInputErrors() {
+    private void limpiarErroresInputs() {
         tilEmail.setError(null);
         tilPassword.setError(null);
     }
+    // endregion
 
-    private void handleRememberPassword(@NonNull String email, @NonNull String password) {
+    // region Preferencias
+    private void gestionarRecordarContrasena(@NonNull String email, @NonNull String password) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
         if (cbRememberPassword.isChecked()) {
@@ -176,16 +218,27 @@ public class LoginActivity extends AppCompatActivity {
 
         editor.apply();
     }
+    // endregion
 
-    private void navigateToMain() {
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+    // region Navegacion
+    private void navegarAElegirEquipoFavorito() {
+        Intent intent = new Intent(LoginActivity.this, ElegirEquipoFavActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
     }
 
+    private void navegarAPrincipal() {
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+    }
+    // endregion
+
+    // region Utils
     @NonNull
-    private String getText(@NonNull TextInputEditText textInputEditText) {
+    private String obtenerTexto(@NonNull TextInputEditText textInputEditText) {
         Editable editable = textInputEditText.getText();
         return editable == null ? "" : editable.toString();
     }
+    // endregion
 }

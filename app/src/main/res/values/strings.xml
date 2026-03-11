@@ -36,6 +36,7 @@
     <string name="fav_team_title">Elige tu equipo favorito</string>
     <string name="fav_team_subtitle">Solo la primera vez: luego podras cambiarlo en tu perfil.</string>
     <string name="fav_team_search_hint">Buscar equipo</string>
+    <string name="fav_team_league_hint">Selecciona una liga</string>
     <string name="fav_team_recommended">Equipos populares</string>
     <string name="fav_team_save_button">Guardar equipo</string>
     <string name="fav_team_1">Real Madrid</string>
@@ -45,4 +46,13 @@
     <string name="fav_team_5">Liverpool</string>
     <string name="fav_team_6">Bayern Munich</string>
     <string name="fav_team_shield_desc">Escudo del equipo</string>
+    <string name="fav_team_selected_desc">Equipo seleccionado</string>
+    <string name="fav_team_empty_leagues">No hay ligas disponibles.</string>
+    <string name="fav_team_empty_teams">No hay equipos disponibles en esta liga.</string>
+    <string name="fav_team_error_leagues">No se pudieron cargar las ligas.</string>
+    <string name="fav_team_error_teams">No se pudieron cargar los equipos de la liga.</string>
+    <string name="fav_team_error_select_league">Selecciona una liga antes de guardar.</string>
+    <string name="fav_team_error_select_team">Selecciona un equipo antes de guardar.</string>
+    <string name="fav_team_saved">Equipo favorito guardado.</string>
+    <string name="fav_team_error_save">No se pudo guardar tu equipo favorito.</string>
 </resources>
