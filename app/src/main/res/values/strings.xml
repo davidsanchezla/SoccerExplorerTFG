@@ -33,4 +33,16 @@
     <string name="error_register_generic">No se pudo registrar el usuario. Intentalo de nuevo.</string>
     <string name="error_save_user_db">Usuario creado en Auth, pero fallo al guardar en Firestore.</string>
     <string name="home_welcome">Bienvenido a SoccerExplorer</string>
+    <string name="fav_team_title">Elige tu equipo favorito</string>
+    <string name="fav_team_subtitle">Solo la primera vez: luego podras cambiarlo en tu perfil.</string>
+    <string name="fav_team_search_hint">Buscar equipo</string>
+    <string name="fav_team_recommended">Equipos populares</string>
+    <string name="fav_team_save_button">Guardar equipo</string>
+    <string name="fav_team_1">Real Madrid</string>
+    <string name="fav_team_2">FC Barcelona</string>
+    <string name="fav_team_3">Atletico de Madrid</string>
+    <string name="fav_team_4">Manchester City</string>
+    <string name="fav_team_5">Liverpool</string>
+    <string name="fav_team_6">Bayern Munich</string>
+    <string name="fav_team_shield_desc">Escudo del equipo</string>
 </resources>
