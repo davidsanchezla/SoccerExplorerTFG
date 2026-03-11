@@ -10,6 +10,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -19,6 +28,9 @@ public class RegisterActivity extends AppCompatActivity {
     private TextInputEditText etUsername;
     private TextInputEditText etPassword;
     private TextInputEditText etRepeatPassword;
+    private MaterialButton btnRegister;
+    private FirebaseAuth firebaseAuth;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,13 +43,16 @@ public class RegisterActivity extends AppCompatActivity {
         etUsername = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
         etRepeatPassword = findViewById(R.id.etRepeatPassword);
+        btnRegister = findViewById(R.id.btnRegister);
 
-        MaterialButton btnRegister = findViewById(R.id.btnRegister);
+        firebaseAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
+
         TextView tvLoginLink = findViewById(R.id.tvLoginLink);
 
         btnRegister.setOnClickListener(v -> {
             if (validarFormulario()) {
-                Toast.makeText(this, R.string.register_success_placeholder, Toast.LENGTH_SHORT).show();
+                registrarUsuario();
             }
         });
 
@@ -84,6 +99,57 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         return isValid;
+    }
+
+    private void registrarUsuario() {
+        String email = etUsername.getText() == null ? "" : etUsername.getText().toString().trim();
+        String password = etPassword.getText() == null ? "" : etPassword.getText().toString();
+
+        btnRegister.setEnabled(false);
+
+        firebaseAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful() && task.getResult() != null
+                            && task.getResult().getUser() != null) {
+                        String uid = task.getResult().getUser().getUid();
+                        guardarUsuarioEnFirestore(uid, email);
+                        return;
+                    }
+
+                    btnRegister.setEnabled(true);
+
+                    Exception exception = task.getException();
+                    if (exception instanceof FirebaseAuthUserCollisionException) {
+                        tilUsername.setError(getString(R.string.error_email_already_exists));
+                    } else if (exception instanceof FirebaseAuthWeakPasswordException) {
+                        tilPassword.setError(getString(R.string.error_password_rules));
+                    } else if (exception instanceof FirebaseAuthInvalidCredentialsException) {
+                        tilUsername.setError(getString(R.string.error_email_format));
+                    } else {
+                        Toast.makeText(this, R.string.error_register_generic, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void guardarUsuarioEnFirestore(String uid, String email) {
+        Map<String, Object> user = new HashMap<>();
+        user.put("uid", uid);
+        user.put("email", email);
+        user.put("createdAt", FieldValue.serverTimestamp());
+
+        firestore.collection("users")
+                .document(uid)
+                .set(user)
+                .addOnSuccessListener(unused -> {
+                    btnRegister.setEnabled(true);
+                    Toast.makeText(this, R.string.register_success, Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnRegister.setEnabled(true);
+                    Toast.makeText(this, R.string.error_save_user_db, Toast.LENGTH_LONG).show();
+                });
     }
 
     private boolean esPasswordValido(String password) {
