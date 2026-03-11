@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/itemContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@color/background_secondary"
+    android:foreground="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/bg_escudo_circle"
+        android:padding="6dp">
+
+        <ImageView
+            android:id="@+id/ivEscudo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/fav_team_shield_desc"
+            android:scaleType="centerInside"
+            android:src="@mipmap/ic_launcher_round" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tvNombreEquipo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="FC Barcelona" />
+
+    <ImageView
+        android:id="@+id/ivSelected"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:contentDescription="@string/fav_team_selected_desc"
+        android:src="@android:drawable/checkbox_on_background"
+        android:tint="@color/success"
+        android:visibility="gone" />
+
+</LinearLayout>
