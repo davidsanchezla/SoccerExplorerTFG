@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@color/background_secondary"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/ivNoticia"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:contentDescription="@string/news_image_desc"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_launcher_background"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/tvNoticiaTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="Victoria importante del equipo en la liga" />
+
+    <TextView
+        android:id="@+id/tvNoticiaFuente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        tools:text="Fuente - 2026-03-11" />
+
+</LinearLayout>

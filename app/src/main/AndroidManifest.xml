@@ -15,7 +15,8 @@
         android:theme="@style/Theme.SoccerExplorer">
         <activity
             android:name=".ElegirEquipoFavActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
