@@ -36,6 +36,7 @@
     <string name="fav_team_title">Elige tu equipo favorito</string>
     <string name="fav_team_subtitle">Solo la primera vez: luego podras cambiarlo en tu perfil.</string>
     <string name="fav_team_search_hint">Buscar equipo</string>
+    <string name="fav_team_league_hint">Selecciona una liga</string>
     <string name="fav_team_recommended">Equipos populares</string>
     <string name="fav_team_save_button">Guardar equipo</string>
     <string name="fav_team_1">Real Madrid</string>
@@ -45,4 +46,36 @@
     <string name="fav_team_5">Liverpool</string>
     <string name="fav_team_6">Bayern Munich</string>
     <string name="fav_team_shield_desc">Escudo del equipo</string>
+    <string name="fav_team_selected_desc">Equipo seleccionado</string>
+    <string name="fav_team_empty_leagues">No hay ligas disponibles.</string>
+    <string name="fav_team_empty_teams">No hay equipos disponibles en esta liga.</string>
+    <string name="fav_team_error_leagues">No se pudieron cargar las ligas.</string>
+    <string name="fav_team_error_teams">No se pudieron cargar los equipos de la liga.</string>
+    <string name="fav_team_error_select_league">Selecciona una liga antes de guardar.</string>
+    <string name="fav_team_error_select_team">Selecciona un equipo antes de guardar.</string>
+    <string name="fav_team_saved">Equipo favorito guardado.</string>
+    <string name="fav_team_error_save">No se pudo guardar tu equipo favorito.</string>
+    <string name="error_loading_profile">No se pudo cargar tu perfil. Intentalo de nuevo.</string>
+
+    <string name="tab_home">Inicio</string>
+    <string name="tab_map">Mapa</string>
+    <string name="tab_profile">Perfil</string>
+    <string name="tab_map_placeholder_title">Mapa</string>
+    <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
+    <string name="tab_profile_placeholder_title">Perfil</string>
+    <string name="tab_profile_placeholder_message">Aqui ira la vista de perfil.</string>
+
+    <string name="news_title">Noticias de tu equipo</string>
+    <string name="news_team_label">Equipo: %1$s</string>
+    <string name="news_image_desc">Imagen de la noticia</string>
+    <string name="news_unknown_source">Fuente desconocida</string>
+    <string name="news_error_no_user">No hay sesion iniciada.</string>
+    <string name="news_error_no_team">No tienes equipo favorito guardado.</string>
+    <string name="news_error_team_load">No se pudo cargar tu equipo favorito.</string>
+    <string name="news_error_missing_key">Falta configurar NEWS_API_KEY en local.properties.</string>
+    <string name="news_error_api">Error al consultar NewsAPI.</string>
+    <string name="news_error_api_detailed">Error NewsAPI (%1$d): %2$s</string>
+    <string name="news_error_rate_limit">Demasiadas peticiones a NewsAPI. Espera un minuto e intentalo de nuevo.</string>
+    <string name="news_error_network">Error de red al cargar noticias.</string>
+    <string name="news_empty">No hay noticias para este equipo ahora mismo.</string>
 </resources>

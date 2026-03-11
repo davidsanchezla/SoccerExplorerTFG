@@ -136,6 +136,7 @@ public class RegisterActivity extends AppCompatActivity {
         user.put("uid", uid);
         user.put("email", email);
         user.put("createdAt", FieldValue.serverTimestamp());
+        user.put("onboardingCompleted", false); // Nuevo campo para poder controlar el primer login
 
         firestore.collection("users")
                 .document(uid)
