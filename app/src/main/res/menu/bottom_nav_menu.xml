@@ -7,6 +7,11 @@
         android:title="@string/tab_home" />
 
     <item
+        android:id="@+id/nav_matches"
+        android:icon="@drawable/ic_soccer_ball"
+        android:title="@string/tab_matches" />
+
+    <item
         android:id="@+id/nav_map"
         android:icon="@android:drawable/ic_menu_mapmode"
         android:title="@string/tab_map" />

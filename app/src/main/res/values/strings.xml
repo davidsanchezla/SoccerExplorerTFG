@@ -58,8 +58,11 @@
     <string name="error_loading_profile">No se pudo cargar tu perfil. Intentalo de nuevo.</string>
 
     <string name="tab_home">Inicio</string>
+    <string name="tab_matches">Partidos</string>
     <string name="tab_map">Mapa</string>
     <string name="tab_profile">Perfil</string>
+    <string name="tab_matches_placeholder_title">Partidos</string>
+    <string name="tab_matches_placeholder_message">Aqui veras tus partidos favoritos proximamente.</string>
     <string name="tab_map_placeholder_title">Mapa</string>
     <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
     <string name="tab_profile_placeholder_title">Perfil</string>

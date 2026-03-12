@@ -12,6 +12,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 public class MainActivity extends AppCompatActivity {
 
     private final NoticiasFragment noticiasFragment = new NoticiasFragment();
+    private final PartidosFragment partidosFragment = new PartidosFragment();
     private Fragment mapFragment;
     private Fragment profileFragment;
 
@@ -32,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.nav_home) {
                 abrirFragmento(noticiasFragment);
+                return true;
+            }
+
+            if (item.getItemId() == R.id.nav_matches) {
+                abrirFragmento(partidosFragment);
                 return true;
             }
 
