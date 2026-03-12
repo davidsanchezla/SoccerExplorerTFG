@@ -33,9 +33,10 @@
     <string name="error_register_generic">No se pudo registrar el usuario. Intentalo de nuevo.</string>
     <string name="error_save_user_db">Usuario creado en Auth, pero fallo al guardar en Firestore.</string>
     <string name="home_welcome">Bienvenido a SoccerExplorer</string>
-    <string name="fav_team_title">Elige tu equipo favorito</string>
-    <string name="fav_team_subtitle">Solo la primera vez: luego podras cambiarlo en tu perfil.</string>
-    <string name="fav_team_search_hint">Buscar equipo</string>
+    <string name="fav_team_title">Selecciona tu equipo favorito</string>
+    <string name="fav_team_subtitle">Recibe noticias personalizadas, partidos en vivo y resultados del equipo que sigues.</string>
+    <string name="fav_team_search_hint">Busca equipos o ligas</string>
+    <string name="fav_team_step">Paso 1 de 3</string>
     <string name="fav_team_league_hint">Selecciona una liga</string>
     <string name="fav_team_recommended">Equipos populares</string>
     <string name="fav_team_save_button">Guardar equipo</string>
@@ -53,6 +54,9 @@
     <string name="fav_team_error_teams">No se pudieron cargar los equipos de la liga.</string>
     <string name="fav_team_error_select_league">Selecciona una liga antes de guardar.</string>
     <string name="fav_team_error_select_team">Selecciona un equipo antes de guardar.</string>
+    <string name="fav_team_search_empty">No hay equipos que coincidan con tu busqueda.</string>
+    <string name="fav_team_selection_none">Ningun equipo seleccionado</string>
+    <string name="fav_team_selection_one">1 equipo seleccionado: %1$s</string>
     <string name="fav_team_saved">Equipo favorito guardado.</string>
     <string name="fav_team_error_save">No se pudo guardar tu equipo favorito.</string>
     <string name="error_loading_profile">No se pudo cargar tu perfil. Intentalo de nuevo.</string>
