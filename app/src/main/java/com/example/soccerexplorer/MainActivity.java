@@ -13,7 +13,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final NoticiasFragment noticiasFragment = new NoticiasFragment();
     private final PartidosFragment partidosFragment = new PartidosFragment();
-    private Fragment mapFragment;
+    private final MapaFragment mapFragment = new MapaFragment();
     private final BuscadorFragment buscadorFragment = new BuscadorFragment();
     private Fragment profileFragment;
 
@@ -43,12 +43,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (item.getItemId() == R.id.nav_map) {
-                if (mapFragment == null) {
-                    mapFragment = PlaceholderFragment.newInstance(
-                            getString(R.string.tab_map_placeholder_title),
-                            getString(R.string.tab_map_placeholder_message)
-                    );
-                }
                 abrirFragmento(mapFragment);
                 return true;
             }

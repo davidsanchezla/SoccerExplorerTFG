@@ -70,6 +70,8 @@
     <string name="tab_matches_placeholder_message">Aqui veras tus partidos favoritos proximamente.</string>
     <string name="tab_map_placeholder_title">Mapa</string>
     <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
+    <string name="map_title">Mapa OpenStreetMap</string>
+    <string name="map_subtitle">Vista base del mapa para futuras funciones.</string>
     <string name="tab_search_placeholder_title">Buscador</string>
     <string name="tab_search_placeholder_message">Aqui podras buscar equipos, ligas y noticias proximamente.</string>
     <string name="tab_search_input_hint">Buscar...</string>
