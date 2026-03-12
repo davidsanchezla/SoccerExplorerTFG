@@ -1,5 +1,7 @@
 package com.example.soccerexplorer;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -33,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 public class NoticiasFragment extends Fragment {
 
@@ -50,8 +54,9 @@ public class NoticiasFragment extends Fragment {
     private TextView tvNoticiasError;
     private ProgressBar progressNoticias;
     private NoticiasAdapter noticiasAdapter;
+    private Context appContext;
 
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executorService;
 
     @Nullable
     @Override
@@ -62,6 +67,8 @@ public class NoticiasFragment extends Fragment {
 
         firebaseAuth = FirebaseAuth.getInstance();
         firestore = FirebaseFirestore.getInstance();
+        appContext = requireContext().getApplicationContext();
+        asegurarEjecutor();
 
         tvEquipoActual = view.findViewById(R.id.tvEquipoActual);
         tvNoticiasError = view.findViewById(R.id.tvNoticiasError);
@@ -79,7 +86,7 @@ public class NoticiasFragment extends Fragment {
     private void cargarNoticiasEquipoFavorito() {
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser == null) {
-            mostrarError(getString(R.string.news_error_no_user));
+            mostrarError(obtenerTextoRecurso(R.string.news_error_no_user));
             return;
         }
 
@@ -89,26 +96,33 @@ public class NoticiasFragment extends Fragment {
                 .document(currentUser.getUid())
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    String equipo = documentSnapshot.getString("equipoFavoritoNombre");
-                    if (equipo == null || equipo.trim().isEmpty()) {
-                        mostrarLoading(false);
-                        mostrarError(getString(R.string.news_error_no_team));
+                    if (!isAdded() || getView() == null || tvEquipoActual == null) {
                         return;
                     }
 
-                    tvEquipoActual.setText(getString(R.string.news_team_label, equipo));
+                    String equipo = documentSnapshot.getString("equipoFavoritoNombre");
+                    if (equipo == null || equipo.trim().isEmpty()) {
+                        mostrarLoading(false);
+                        mostrarError(obtenerTextoRecurso(R.string.news_error_no_team));
+                        return;
+                    }
+
+                    tvEquipoActual.setText(obtenerTextoRecurso(R.string.news_team_label, equipo));
                     pedirNoticiasApi(equipo);
                 })
                 .addOnFailureListener(e -> {
+                    if (!isAdded() || getView() == null) {
+                        return;
+                    }
                     mostrarLoading(false);
-                    mostrarError(getString(R.string.news_error_team_load));
+                    mostrarError(obtenerTextoRecurso(R.string.news_error_team_load));
                 });
     }
 
     private void pedirNoticiasApi(@NonNull String equipo) {
         if (BuildConfig.NEWS_API_KEY == null || BuildConfig.NEWS_API_KEY.trim().isEmpty()) {
             mostrarLoading(false);
-            mostrarError(getString(R.string.news_error_missing_key));
+            mostrarError(obtenerTextoRecurso(R.string.news_error_missing_key));
             return;
         }
 
@@ -121,7 +135,8 @@ public class NoticiasFragment extends Fragment {
             return;
         }
 
-        executorService.execute(() -> {
+        ExecutorService executor = asegurarEjecutor();
+        Runnable requestTask = () -> {
             HttpURLConnection connection = null;
             try {
                 String query = URLEncoder.encode(equipo, StandardCharsets.UTF_8.name());
@@ -147,21 +162,27 @@ public class NoticiasFragment extends Fragment {
 
                 String response = leerInputStream(inputStream);
                 if (responseCode < 200 || responseCode >= 300) {
-                    postError(obtenerMensajeErrorApi(responseCode, response));
+                    publicarError(obtenerMensajeErrorApi(responseCode, response));
                     return;
                 }
 
                 List<NoticiasAdapter.NoticiaItem> noticias = parsearNoticias(response);
                 actualizarCache(equipo, noticias);
-                postNoticias(noticias);
+                publicarNoticias(noticias);
             } catch (Exception e) {
-                postError(getString(R.string.news_error_network));
+                publicarError(obtenerTextoRecurso(R.string.news_error_network));
             } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
             }
-        });
+        };
+
+        try {
+            executor.execute(requestTask);
+        } catch (RejectedExecutionException ignored) {
+            asegurarEjecutor().execute(requestTask);
+        }
     }
 
     @NonNull
@@ -208,7 +229,7 @@ public class NoticiasFragment extends Fragment {
                 fuenteYFecha = fuenteYFecha.isEmpty() ? fecha : fuente + " - " + fecha;
             }
             if (fuenteYFecha.isEmpty()) {
-                fuenteYFecha = getString(R.string.news_unknown_source);
+                fuenteYFecha = obtenerTextoRecurso(R.string.news_unknown_source);
             }
 
             String imageUrl = article.optString("urlToImage", null);
@@ -237,14 +258,14 @@ public class NoticiasFragment extends Fragment {
         }
 
         if (responseCode == 429) {
-            return getString(R.string.news_error_rate_limit);
+            return obtenerTextoRecurso(R.string.news_error_rate_limit);
         }
 
         if (!apiMessage.isEmpty()) {
-            return getString(R.string.news_error_api_detailed, responseCode, apiMessage);
+            return obtenerTextoRecurso(R.string.news_error_api_detailed, responseCode, apiMessage);
         }
 
-        return getString(R.string.news_error_api);
+        return obtenerTextoRecurso(R.string.news_error_api);
     }
 
     private void actualizarCache(@NonNull String equipo, @NonNull List<NoticiasAdapter.NoticiaItem> noticias) {
@@ -256,15 +277,23 @@ public class NoticiasFragment extends Fragment {
         }
     }
 
-    private void postNoticias(@NonNull List<NoticiasAdapter.NoticiaItem> noticias) {
+    private void publicarNoticias(@NonNull List<NoticiasAdapter.NoticiaItem> noticias) {
         if (!isAdded()) {
             return;
         }
 
-        requireActivity().runOnUiThread(() -> {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            if (!isAdded() || getView() == null || tvNoticiasError == null || progressNoticias == null || noticiasAdapter == null) {
+                return;
+            }
             mostrarLoading(false);
             if (noticias.isEmpty()) {
-                mostrarError(getString(R.string.news_empty));
+                mostrarError(obtenerTextoRecurso(R.string.news_empty));
                 noticiasAdapter.actualizarNoticias(new ArrayList<>());
                 return;
             }
@@ -274,19 +303,63 @@ public class NoticiasFragment extends Fragment {
         });
     }
 
-    private void postError(@NonNull String message) {
+    private void publicarError(@NonNull String message) {
         if (!isAdded()) {
             return;
         }
 
-        requireActivity().runOnUiThread(() -> {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            if (!isAdded() || getView() == null || tvNoticiasError == null || progressNoticias == null || noticiasAdapter == null) {
+                return;
+            }
             mostrarLoading(false);
             mostrarError(message);
             noticiasAdapter.actualizarNoticias(new ArrayList<>());
         });
     }
 
+    private ExecutorService asegurarEjecutor() {
+        if (executorService == null || executorService.isShutdown() || executorService.isTerminated()) {
+            executorService = Executors.newSingleThreadExecutor();
+        }
+        return executorService;
+    }
+
+    @NonNull
+    private String obtenerTextoRecurso(@StringRes int resId) {
+        Context context = appContext;
+        if (context == null && getContext() != null) {
+            context = getContext().getApplicationContext();
+            appContext = context;
+        }
+        if (context == null) {
+            return "";
+        }
+        return context.getString(resId);
+    }
+
+    @NonNull
+    private String obtenerTextoRecurso(@StringRes int resId, Object... args) {
+        Context context = appContext;
+        if (context == null && getContext() != null) {
+            context = getContext().getApplicationContext();
+            appContext = context;
+        }
+        if (context == null) {
+            return "";
+        }
+        return context.getString(resId, args);
+    }
+
     private void mostrarLoading(boolean loading) {
+        if (progressNoticias == null || tvNoticiasError == null) {
+            return;
+        }
         progressNoticias.setVisibility(loading ? View.VISIBLE : View.GONE);
         if (loading) {
             tvNoticiasError.setVisibility(View.GONE);
@@ -294,17 +367,25 @@ public class NoticiasFragment extends Fragment {
     }
 
     private void mostrarError(@NonNull String message) {
+        if (tvNoticiasError == null) {
+            return;
+        }
         tvNoticiasError.setText(message);
         tvNoticiasError.setVisibility(View.VISIBLE);
     }
 
     private void abrirDetalleNoticia(@NonNull NoticiasAdapter.NoticiaItem noticia) {
-        if (noticia.url == null || noticia.url.trim().isEmpty()) {
-            Toast.makeText(requireContext(), R.string.news_error_no_url, Toast.LENGTH_SHORT).show();
+        Context context = getContext();
+        if (context == null) {
             return;
         }
 
-        Intent intent = new Intent(requireContext(), NewsWebViewActivity.class);
+        if (noticia.url == null || noticia.url.trim().isEmpty()) {
+            Toast.makeText(context, R.string.news_error_no_url, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(context, NewsWebViewActivity.class);
         intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_URL, noticia.url);
         intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_TITLE, noticia.titulo);
         startActivity(intent);
@@ -313,6 +394,12 @@ public class NoticiasFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        executorService.shutdownNow();
+        if (executorService != null) {
+            executorService.shutdownNow();
+            executorService = null;
+        }
+        tvEquipoActual = null;
+        tvNoticiasError = null;
+        progressNoticias = null;
     }
 }
