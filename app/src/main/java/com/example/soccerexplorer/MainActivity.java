@@ -14,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
     private final NoticiasFragment noticiasFragment = new NoticiasFragment();
     private final PartidosFragment partidosFragment = new PartidosFragment();
     private Fragment mapFragment;
+    private final BuscadorFragment buscadorFragment = new BuscadorFragment();
     private Fragment profileFragment;
 
     @Override
@@ -49,6 +50,11 @@ public class MainActivity extends AppCompatActivity {
                     );
                 }
                 abrirFragmento(mapFragment);
+                return true;
+            }
+
+            if (item.getItemId() == R.id.nav_search) {
+                abrirFragmento(buscadorFragment);
                 return true;
             }
 
