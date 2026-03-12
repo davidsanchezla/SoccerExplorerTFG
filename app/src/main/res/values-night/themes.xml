@@ -12,4 +12,10 @@
         <item name="android:statusBarColor">@color/background_primary</item>
         <item name="android:navigationBarColor">@color/background_primary</item>
     </style>
+
+    <style name="Theme.SoccerExplorer" parent="Base.Theme.SoccerExplorer" />
+
+    <style name="Widget.SoccerExplorer.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/accent_coral_soft</item>
+    </style>
 </resources>

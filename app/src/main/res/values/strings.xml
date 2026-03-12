@@ -64,10 +64,16 @@
     <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
     <string name="tab_profile_placeholder_title">Perfil</string>
     <string name="tab_profile_placeholder_message">Aqui ira la vista de perfil.</string>
+    <string name="main_toolbar_subtitle">Tu futbol en tiempo real</string>
 
     <string name="news_title">Noticias de tu equipo</string>
     <string name="news_team_label">Equipo: %1$s</string>
     <string name="news_image_desc">Imagen de la noticia</string>
+    <string name="news_chip_live">ULTIMA HORA</string>
+    <string name="news_cta_view_more">Ver mas</string>
+    <string name="news_webview_default_title">Noticia</string>
+    <string name="news_error_no_url">No se puede abrir esta noticia ahora.</string>
+    <string name="news_webview_navigation_blocked">Navegacion bloqueada: solo lectura de la noticia.</string>
     <string name="news_unknown_source">Fuente desconocida</string>
     <string name="news_error_no_user">No hay sesion iniciada.</string>
     <string name="news_error_no_team">No tienes equipo favorito guardado.</string>

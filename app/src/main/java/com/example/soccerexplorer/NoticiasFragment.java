@@ -1,11 +1,13 @@
 package com.example.soccerexplorer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -67,7 +69,7 @@ public class NoticiasFragment extends Fragment {
         RecyclerView rvNoticias = view.findViewById(R.id.rvNoticias);
 
         rvNoticias.setLayoutManager(new LinearLayoutManager(requireContext()));
-        noticiasAdapter = new NoticiasAdapter();
+        noticiasAdapter = new NoticiasAdapter(this::abrirDetalleNoticia);
         rvNoticias.setAdapter(noticiasAdapter);
 
         cargarNoticiasEquipoFavorito();
@@ -214,7 +216,12 @@ public class NoticiasFragment extends Fragment {
                 imageUrl = null;
             }
 
-            noticias.add(new NoticiasAdapter.NoticiaItem(titulo, fuenteYFecha, imageUrl));
+            String url = article.optString("url", null);
+            if (url != null && url.trim().isEmpty()) {
+                url = null;
+            }
+
+            noticias.add(new NoticiasAdapter.NoticiaItem(titulo, fuenteYFecha, imageUrl, url));
         }
 
         return noticias;
@@ -289,6 +296,18 @@ public class NoticiasFragment extends Fragment {
     private void mostrarError(@NonNull String message) {
         tvNoticiasError.setText(message);
         tvNoticiasError.setVisibility(View.VISIBLE);
+    }
+
+    private void abrirDetalleNoticia(@NonNull NoticiasAdapter.NoticiaItem noticia) {
+        if (noticia.url == null || noticia.url.trim().isEmpty()) {
+            Toast.makeText(requireContext(), R.string.news_error_no_url, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), NewsWebViewActivity.class);
+        intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_URL, noticia.url);
+        intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_TITLE, noticia.titulo);
+        startActivity(intent);
     }
 
     @Override

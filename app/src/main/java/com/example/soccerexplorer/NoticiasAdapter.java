@@ -11,13 +11,23 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class NoticiasAdapter extends RecyclerView.Adapter<NoticiasAdapter.NoticiaViewHolder> {
 
+    interface OnNoticiaClickListener {
+        void onAbrirNoticia(@NonNull NoticiaItem noticia);
+    }
+
     private final List<NoticiaItem> noticias = new ArrayList<>();
+    private final OnNoticiaClickListener onNoticiaClickListener;
+
+    NoticiasAdapter(@NonNull OnNoticiaClickListener onNoticiaClickListener) {
+        this.onNoticiaClickListener = onNoticiaClickListener;
+    }
 
     void actualizarNoticias(@NonNull List<NoticiaItem> nuevasNoticias) {
         noticias.clear();
@@ -38,12 +48,18 @@ public class NoticiasAdapter extends RecyclerView.Adapter<NoticiasAdapter.Notici
         NoticiaItem noticia = noticias.get(position);
         holder.tvTitulo.setText(noticia.titulo);
         holder.tvFuente.setText(noticia.fuenteYFecha);
+        boolean tieneUrl = noticia.url != null && !noticia.url.trim().isEmpty();
 
         Glide.with(holder.itemView.getContext())
                 .load(noticia.imagenUrl)
-                .placeholder(R.drawable.ic_launcher_background)
-                .error(R.drawable.ic_launcher_background)
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
                 .into(holder.ivNoticia);
+
+        holder.btnVerMas.setEnabled(tieneUrl);
+        holder.btnVerMas.setAlpha(tieneUrl ? 1f : 0.55f);
+        holder.btnVerMas.setOnClickListener(v -> onNoticiaClickListener.onAbrirNoticia(noticia));
+        holder.itemView.setOnClickListener(v -> onNoticiaClickListener.onAbrirNoticia(noticia));
     }
 
     @Override
@@ -55,12 +71,14 @@ public class NoticiasAdapter extends RecyclerView.Adapter<NoticiasAdapter.Notici
         final ImageView ivNoticia;
         final TextView tvTitulo;
         final TextView tvFuente;
+        final MaterialButton btnVerMas;
 
         NoticiaViewHolder(@NonNull View itemView) {
             super(itemView);
             ivNoticia = itemView.findViewById(R.id.ivNoticia);
             tvTitulo = itemView.findViewById(R.id.tvNoticiaTitulo);
             tvFuente = itemView.findViewById(R.id.tvNoticiaFuente);
+            btnVerMas = itemView.findViewById(R.id.btnVerMas);
         }
     }
 
@@ -69,11 +87,19 @@ public class NoticiasAdapter extends RecyclerView.Adapter<NoticiasAdapter.Notici
         final String fuenteYFecha;
         @Nullable
         final String imagenUrl;
+        @Nullable
+        final String url;
 
-        NoticiaItem(@NonNull String titulo, @NonNull String fuenteYFecha, @Nullable String imagenUrl) {
+        NoticiaItem(
+                @NonNull String titulo,
+                @NonNull String fuenteYFecha,
+                @Nullable String imagenUrl,
+                @Nullable String url
+        ) {
             this.titulo = titulo;
             this.fuenteYFecha = fuenteYFecha;
             this.imagenUrl = imagenUrl;
+            this.url = url;
         }
     }
 }

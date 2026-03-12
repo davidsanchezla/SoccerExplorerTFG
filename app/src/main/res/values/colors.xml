@@ -12,6 +12,9 @@
     <color name="on_primary">#FFFFFF</color>
 
     <color name="accent_map">#FF7B72</color>
+    <color name="accent_coral">#FF7B72</color>
+    <color name="accent_coral_soft">#26FF7B72</color>
+    <color name="accent_coral_stroke">#66FF7B72</color>
     <color name="success">#3FB950</color>
     <color name="warning">#D29922</color>
     <color name="error">#D32F2F</color>

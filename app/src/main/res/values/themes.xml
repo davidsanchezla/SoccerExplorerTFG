@@ -14,4 +14,8 @@
     </style>
 
     <style name="Theme.SoccerExplorer" parent="Base.Theme.SoccerExplorer" />
+
+    <style name="Widget.SoccerExplorer.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/accent_coral_soft</item>
+    </style>
 </resources>

@@ -1,39 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    android:background="@color/background_secondary"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:layout_marginBottom="14dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@android:color/transparent"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/accent_coral_stroke"
+    app:strokeWidth="1dp">
 
-    <ImageView
-        android:id="@+id/ivNoticia"
-        android:layout_width="match_parent"
-        android:layout_height="160dp"
-        android:contentDescription="@string/news_image_desc"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_launcher_background"
-        tools:ignore="ContentDescription" />
-
-    <TextView
-        android:id="@+id/tvNoticiaTitulo"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        tools:text="Victoria importante del equipo en la liga" />
+        android:background="@drawable/bg_news_card_surface"
+        android:orientation="vertical"
+        android:padding="12dp">
 
-    <TextView
-        android:id="@+id/tvNoticiaFuente"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp"
-        tools:text="Fuente - 2026-03-11" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="182dp"
+            android:layout_margin="2dp"
+            android:clipToPadding="false"
+            android:clipChildren="false">
 
-</LinearLayout>
+            <ImageView
+                android:id="@+id/ivNoticia"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/news_image_desc"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/ic_launcher_round"
+                tools:ignore="ContentDescription" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_news_image_overlay" />
+
+            <TextView
+                android:id="@+id/tvNoticiaChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="10dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/bg_news_live_chip"
+                android:paddingStart="10dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="4dp"
+                android:text="@string/news_chip_live"
+                android:textColor="@color/accent_coral"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tvNoticiaTitulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            tools:text="Victoria importante del equipo en la liga" />
+
+        <TextView
+            android:id="@+id/tvNoticiaFuente"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_news_meta_chip"
+            android:drawablePadding="6dp"
+            android:drawableStart="@android:drawable/ic_menu_today"
+            android:drawableTint="@color/primary"
+            android:ellipsize="end"
+            android:maxWidth="280dp"
+            android:paddingStart="10dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="5dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            tools:text="Fuente - 2026-03-11" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVerMas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_news_cta"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:text="@string/news_cta_view_more"
+            android:textAllCaps="false"
+            android:textColor="@color/on_primary"
+            app:cornerRadius="14dp"
+            app:icon="@android:drawable/ic_menu_view"
+            app:iconGravity="textStart"
+            app:iconTint="@color/on_primary" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
