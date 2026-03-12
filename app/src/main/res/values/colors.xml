@@ -27,4 +27,5 @@
     <color name="map_route">#58A6FF</color>
     <color name="map_cluster_start">#58A6FF</color>
     <color name="map_cluster_end">#A371F7</color>
+    <color name="map_overlay_tint">#220D1117</color>
 </resources>
