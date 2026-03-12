@@ -1,13 +1,14 @@
 package com.example.soccerexplorer;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -17,13 +18,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -34,6 +42,7 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class ElegirEquipoFavActivity extends AppCompatActivity {
@@ -41,15 +50,20 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
     private FirebaseFirestore firestore;
     private FirebaseAuth firebaseAuth;
 
-    private TextInputLayout tilLiga;
-    private AutoCompleteTextView actvLiga;
+    private TextInputLayout tilBuscarEquipo;
+    private TextInputEditText etBuscarEquipo;
+    private ChipGroup grupoChipsLigas;
     private RecyclerView rvEquipos;
     private ProgressBar pbEquipos;
     private TextView tvEquiposEmpty;
+    private TextView tvResumenSeleccion;
     private MaterialButton btnGuardarEquipo;
 
     private final List<LigaItem> ligas = new ArrayList<>();
+    private final List<EquipoItem> equiposLigaActual = new ArrayList<>();
     private EquipoAdapter equipoAdapter;
+
+    private boolean bloqueandoEventoChipLiga;
 
     @Nullable
     private LigaItem ligaSeleccionada;
@@ -79,16 +93,18 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
 
     // region Configuracion UI
     private void vincularVistas() {
-        tilLiga = findViewById(R.id.tilLiga);
-        actvLiga = findViewById(R.id.actvLiga);
+        tilBuscarEquipo = findViewById(R.id.tilBuscarEquipo);
+        etBuscarEquipo = findViewById(R.id.etBuscarEquipo);
+        grupoChipsLigas = findViewById(R.id.grupoChipsLigas);
         rvEquipos = findViewById(R.id.rvEquipos);
         pbEquipos = findViewById(R.id.pbEquipos);
         tvEquiposEmpty = findViewById(R.id.tvEquiposEmpty);
+        tvResumenSeleccion = findViewById(R.id.tvResumenSeleccion);
         btnGuardarEquipo = findViewById(R.id.btnGuardarEquipo);
     }
 
     private void configurarRecyclerEquipos() {
-        rvEquipos.setLayoutManager(new LinearLayoutManager(this));
+        rvEquipos.setLayoutManager(new GridLayoutManager(this, 2));
         equipoAdapter = new EquipoAdapter(equipo -> {
             equipoSeleccionado = equipo;
             equipoAdapter.actualizarEquipoSeleccionadoId(equipo.id);
@@ -98,9 +114,35 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
     }
 
     private void configurarListeners() {
-        actvLiga.setOnItemClickListener((parent, view, position, id) -> {
-            LigaItem liga = (LigaItem) parent.getItemAtPosition(position);
-            alSeleccionarLiga(liga);
+        grupoChipsLigas.setOnCheckedStateChangeListener((group, idsMarcados) -> {
+            if (bloqueandoEventoChipLiga || idsMarcados.isEmpty()) {
+                return;
+            }
+
+            Chip chipLiga = group.findViewById(idsMarcados.get(0));
+            if (chipLiga == null) {
+                return;
+            }
+
+            Object tag = chipLiga.getTag();
+            if (tag instanceof LigaItem) {
+                alSeleccionarLiga((LigaItem) tag);
+            }
+        });
+
+        etBuscarEquipo.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                aplicarFiltroEquipos();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
 
         btnGuardarEquipo.setOnClickListener(v -> guardarEquipoFavorito());
@@ -126,27 +168,22 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
                     ligas.sort((a, b) -> a.nombre.compareToIgnoreCase(b.nombre));
 
                     if (ligas.isEmpty()) {
-                        tilLiga.setError(getString(R.string.fav_team_empty_leagues));
+                        tilBuscarEquipo.setError(getString(R.string.fav_team_empty_leagues));
                         tvEquiposEmpty.setText(R.string.fav_team_empty_leagues);
                         tvEquiposEmpty.setVisibility(View.VISIBLE);
                         rvEquipos.setVisibility(View.GONE);
                         return;
                     }
 
-                    tilLiga.setError(null);
-                    ArrayAdapter<LigaItem> leagueAdapter = new ArrayAdapter<>(
-                            this,
-                            android.R.layout.simple_dropdown_item_1line,
-                            ligas
-                    );
-                    actvLiga.setAdapter(leagueAdapter);
+                    tilBuscarEquipo.setError(null);
+                    crearChipsLigas();
 
                     LigaItem primeraLiga = ligas.get(0);
-                    actvLiga.setText(primeraLiga.nombre, false);
+                    marcarChipLigaSeleccionada(primeraLiga.id);
                     alSeleccionarLiga(primeraLiga);
                 })
                 .addOnFailureListener(e -> {
-                    tilLiga.setError(getString(R.string.fav_team_error_leagues));
+                    tilBuscarEquipo.setError(getString(R.string.fav_team_error_leagues));
                     tvEquiposEmpty.setText(R.string.fav_team_error_leagues);
                     tvEquiposEmpty.setVisibility(View.VISIBLE);
                     rvEquipos.setVisibility(View.GONE);
@@ -156,8 +193,11 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
     private void alSeleccionarLiga(@NonNull LigaItem liga) {
         ligaSeleccionada = liga;
         equipoSeleccionado = null;
+        equiposLigaActual.clear();
+        equipoAdapter.actualizarEquipos(new ArrayList<>());
         equipoAdapter.actualizarEquipoSeleccionadoId(null);
         actualizarEstadoBotonGuardar();
+        etBuscarEquipo.setText(null);
         cargarEquiposLiga(liga.id);
     }
 
@@ -181,30 +221,107 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
                             equipoNombre = equipoId;
                         }
                         String escudoUrl = documentSnapshot.getString("escudo");
-                        equipos.add(new EquipoItem(equipoId, equipoNombre, escudoUrl));
+                        String nombreLiga = ligaSeleccionada != null ? ligaSeleccionada.nombre : "";
+                        equipos.add(new EquipoItem(equipoId, equipoNombre, nombreLiga, escudoUrl));
                     });
 
                     equipos.sort((a, b) -> a.nombre.compareToIgnoreCase(b.nombre));
-                    equipoAdapter.actualizarEquipos(equipos);
+                    equiposLigaActual.clear();
+                    equiposLigaActual.addAll(equipos);
                     mostrarCargaEquipos(false);
-
-                    if (equipos.isEmpty()) {
-                        tvEquiposEmpty.setText(R.string.fav_team_empty_teams);
-                        tvEquiposEmpty.setVisibility(View.VISIBLE);
-                        rvEquipos.setVisibility(View.GONE);
-                        return;
-                    }
-
-                    tvEquiposEmpty.setVisibility(View.GONE);
-                    rvEquipos.setVisibility(View.VISIBLE);
+                    aplicarFiltroEquipos();
                 })
                 .addOnFailureListener(e -> {
+                    equiposLigaActual.clear();
                     equipoAdapter.actualizarEquipos(new ArrayList<>());
                     mostrarCargaEquipos(false);
                     tvEquiposEmpty.setText(R.string.fav_team_error_teams);
                     tvEquiposEmpty.setVisibility(View.VISIBLE);
                     rvEquipos.setVisibility(View.GONE);
                 });
+    }
+
+    private void crearChipsLigas() {
+        grupoChipsLigas.removeAllViews();
+
+        for (LigaItem liga : ligas) {
+            Chip chipLiga = new Chip(this);
+            chipLiga.setId(View.generateViewId());
+            chipLiga.setText(liga.nombre);
+            chipLiga.setTag(liga);
+            chipLiga.setCheckable(true);
+            chipLiga.setCheckedIconVisible(false);
+            chipLiga.setChipBackgroundColorResource(R.color.chip_liga_fondo);
+            chipLiga.setTextColor(ContextCompat.getColorStateList(this, R.color.chip_liga_texto));
+            chipLiga.setChipStrokeColorResource(R.color.chip_liga_borde);
+            chipLiga.setChipStrokeWidth(1f);
+            grupoChipsLigas.addView(chipLiga);
+        }
+    }
+
+    private void marcarChipLigaSeleccionada(@NonNull String ligaId) {
+        for (int i = 0; i < grupoChipsLigas.getChildCount(); i++) {
+            View child = grupoChipsLigas.getChildAt(i);
+            if (!(child instanceof Chip)) {
+                continue;
+            }
+
+            Chip chip = (Chip) child;
+            Object tag = chip.getTag();
+            if (!(tag instanceof LigaItem)) {
+                continue;
+            }
+
+            LigaItem liga = (LigaItem) tag;
+            if (liga.id.equals(ligaId)) {
+                bloqueandoEventoChipLiga = true;
+                grupoChipsLigas.check(chip.getId());
+                bloqueandoEventoChipLiga = false;
+                break;
+            }
+        }
+    }
+
+    private void aplicarFiltroEquipos() {
+        String textoBusqueda = obtenerTextoBusqueda();
+        String textoBusquedaNormalizado = textoBusqueda.toLowerCase(Locale.ROOT);
+
+        List<EquipoItem> equiposFiltrados = new ArrayList<>();
+        for (EquipoItem equipo : equiposLigaActual) {
+            if (textoBusquedaNormalizado.isEmpty()
+                    || equipo.nombre.toLowerCase(Locale.ROOT).contains(textoBusquedaNormalizado)
+                    || equipo.liga.toLowerCase(Locale.ROOT).contains(textoBusquedaNormalizado)) {
+                equiposFiltrados.add(equipo);
+            }
+        }
+
+        equipoAdapter.actualizarEquipos(equiposFiltrados);
+
+        if (equiposLigaActual.isEmpty()) {
+            tvEquiposEmpty.setText(R.string.fav_team_empty_teams);
+            tvEquiposEmpty.setVisibility(View.VISIBLE);
+            rvEquipos.setVisibility(View.GONE);
+            return;
+        }
+
+        if (equiposFiltrados.isEmpty()) {
+            tvEquiposEmpty.setText(R.string.fav_team_search_empty);
+            tvEquiposEmpty.setVisibility(View.VISIBLE);
+            rvEquipos.setVisibility(View.GONE);
+            return;
+        }
+
+        tvEquiposEmpty.setVisibility(View.GONE);
+        rvEquipos.setVisibility(View.VISIBLE);
+    }
+
+    @NonNull
+    private String obtenerTextoBusqueda() {
+        Editable editable = etBuscarEquipo.getText();
+        if (editable == null) {
+            return "";
+        }
+        return editable.toString().trim();
     }
     // endregion
 
@@ -261,6 +378,15 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
 
     private void actualizarEstadoBotonGuardar() {
         btnGuardarEquipo.setEnabled(ligaSeleccionada != null && equipoSeleccionado != null);
+
+        if (equipoSeleccionado == null) {
+            tvResumenSeleccion.setText(R.string.fav_team_selection_none);
+            tvResumenSeleccion.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            return;
+        }
+
+        tvResumenSeleccion.setText(getString(R.string.fav_team_selection_one, equipoSeleccionado.nombre));
+        tvResumenSeleccion.setTextColor(ContextCompat.getColor(this, R.color.primary));
     }
     // endregion
 
@@ -298,12 +424,14 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
     private static class EquipoItem {
         final String id;
         final String nombre;
+        final String liga;
         @Nullable
         final String escudoUrl;
 
-        EquipoItem(@NonNull String id, @NonNull String nombre, @Nullable String escudoUrl) {
+        EquipoItem(@NonNull String id, @NonNull String nombre, @NonNull String liga, @Nullable String escudoUrl) {
             this.id = id;
             this.nombre = nombre;
+            this.liga = liga;
             this.escudoUrl = escudoUrl;
         }
     }
@@ -320,7 +448,7 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
         private final OnEquipoClickListener onEquipoClickListener;
 
         @Nullable
-        private String selectedEquipoId;
+        private String idEquipoSeleccionado;
 
         EquipoAdapter(@NonNull OnEquipoClickListener onEquipoClickListener) {
             this.onEquipoClickListener = onEquipoClickListener;
@@ -332,8 +460,8 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
             notifyDataSetChanged();
         }
 
-        void actualizarEquipoSeleccionadoId(@Nullable String selectedEquipoId) {
-            this.selectedEquipoId = selectedEquipoId;
+        void actualizarEquipoSeleccionadoId(@Nullable String idEquipoSeleccionado) {
+            this.idEquipoSeleccionado = idEquipoSeleccionado;
             notifyDataSetChanged();
         }
 
@@ -350,21 +478,48 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
             EquipoItem equipo = equipos.get(position);
 
             holder.tvNombreEquipo.setText(equipo.nombre);
+            holder.tvLigaEquipo.setText(equipo.liga);
 
             Object modeloEscudo = construirModeloSolicitudEscudo(equipo.escudoUrl);
+            holder.pbEscudoCarga.setVisibility(View.VISIBLE);
+            holder.ivEscudo.setImageDrawable(null);
+            holder.ivEscudo.setVisibility(View.INVISIBLE);
             Glide.with(holder.itemView.getContext())
                     .load(modeloEscudo)
-                    .placeholder(R.mipmap.ic_launcher_round)
-                    .error(R.mipmap.ic_launcher_round)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(
+                                @Nullable GlideException e,
+                                Object model,
+                                Target<Drawable> target,
+                                boolean isFirstResource
+                        ) {
+                            holder.pbEscudoCarga.setVisibility(View.GONE);
+                            holder.ivEscudo.setVisibility(View.VISIBLE);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(
+                                Drawable resource,
+                                Object model,
+                                Target<Drawable> target,
+                                DataSource dataSource,
+                                boolean isFirstResource
+                        ) {
+                            holder.pbEscudoCarga.setVisibility(View.GONE);
+                            holder.ivEscudo.setVisibility(View.VISIBLE);
+                            return false;
+                        }
+                    })
                     .into(holder.ivEscudo);
 
-            boolean selected = equipo.id.equals(selectedEquipoId);
-            holder.ivSelected.setVisibility(selected ? View.VISIBLE : View.GONE);
-            int backgroundColor = ContextCompat.getColor(
-                    holder.itemView.getContext(),
-                    selected ? R.color.background_tertiary : R.color.background_secondary
+            boolean seleccionado = equipo.id.equals(idEquipoSeleccionado);
+            holder.ivSelected.setVisibility(seleccionado ? View.VISIBLE : View.GONE);
+            holder.itemContainer.setBackgroundResource(
+                    seleccionado ? R.drawable.bg_tarjeta_equipo_seleccionada : R.drawable.bg_tarjeta_equipo
             );
-            holder.itemContainer.setBackgroundColor(backgroundColor);
 
             holder.itemView.setOnClickListener(v -> onEquipoClickListener.onEquipoClick(equipo));
         }
@@ -413,14 +568,18 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
         static class EquipoViewHolder extends RecyclerView.ViewHolder {
             final View itemContainer;
             final ImageView ivEscudo;
+            final ProgressBar pbEscudoCarga;
             final TextView tvNombreEquipo;
+            final TextView tvLigaEquipo;
             final ImageView ivSelected;
 
             EquipoViewHolder(@NonNull View itemView) {
                 super(itemView);
                 itemContainer = itemView.findViewById(R.id.itemContainer);
                 ivEscudo = itemView.findViewById(R.id.ivEscudo);
+                pbEscudoCarga = itemView.findViewById(R.id.pbEscudoCarga);
                 tvNombreEquipo = itemView.findViewById(R.id.tvNombreEquipo);
+                tvLigaEquipo = itemView.findViewById(R.id.tvLigaEquipo);
                 ivSelected = itemView.findViewById(R.id.ivSelected);
             }
         }
