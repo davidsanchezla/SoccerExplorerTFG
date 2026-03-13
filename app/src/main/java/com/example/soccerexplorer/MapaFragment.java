@@ -71,6 +71,15 @@ public class MapaFragment extends Fragment {
             }
     );
 
+    private static final ColorMatrixColorFilter WHITE_LABELS_COLOR_FILTER = new ColorMatrixColorFilter(
+            new ColorMatrix(new float[]{
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 0f, 0f
+            })
+    );
+
     private MapView mapView;
     private MapTileProviderBasic whiteLabelsProvider;
     private TilesOverlay whiteLabelsOverlay;
@@ -123,6 +132,7 @@ public class MapaFragment extends Fragment {
         whiteLabelsOverlay = new TilesOverlay(whiteLabelsProvider, requireContext().getApplicationContext());
         whiteLabelsOverlay.setLoadingBackgroundColor(Color.TRANSPARENT);
         whiteLabelsOverlay.setLoadingLineColor(Color.TRANSPARENT);
+        whiteLabelsOverlay.setColorFilter(WHITE_LABELS_COLOR_FILTER);
         mapView.getOverlays().add(whiteLabelsOverlay);
     }
 
