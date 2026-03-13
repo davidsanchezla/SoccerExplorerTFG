@@ -73,6 +73,12 @@
     <string name="map_title">Mapa OpenStreetMap</string>
     <string name="map_subtitle">Vista base del mapa para futuras funciones.</string>
     <string name="map_attribution">Map data © OpenStreetMap contributors, tiles © CARTO</string>
+    <string name="map_empty_leagues">No hay ligas disponibles para mostrar en el mapa.</string>
+    <string name="map_error_load_leagues">No se pudieron cargar las ligas del mapa.</string>
+    <string name="map_empty_teams_coordinates">No hay equipos con coordenadas validas en esta liga.</string>
+    <string name="map_error_load_teams">No se pudieron cargar los equipos de esta liga.</string>
+    <string name="map_team_location_unknown">Ubicacion no disponible</string>
+    <string name="map_team_snippet_stadium_city">%1$s - %2$s</string>
     <string name="tab_search_placeholder_title">Buscador</string>
     <string name="tab_search_placeholder_message">Aqui podras buscar equipos, ligas y noticias proximamente.</string>
     <string name="tab_search_input_hint">Buscar...</string>
