@@ -64,4 +64,5 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation("com.github.MKergall:osmbonuspack:6.9.0")
 }
