@@ -42,6 +42,17 @@ public class NoticiasFragment extends Fragment {
 
     private static final int NEWS_PAGE_SIZE = 20;
     private static final long CACHE_DURATION_MS = 60000;
+    private static final String CLAUSULA_FUTBOL = "(futbol OR fútbol OR balonpie OR balompie OR club OR liga OR partido OR jornada OR gol OR entrenador OR delantero OR defensa OR portero OR laliga OR \"la liga\" OR champions OR \"copa del rey\")";
+    private static final String CLAUSULA_EXCLUIR_NO_FUTBOL = "NOT (basket OR baloncesto OR basquet OR basketball OR nba OR acb OR euroliga OR eurocup OR wnba)";
+    private static final String[] PALABRAS_FUTBOL = {
+            "futbol", "fútbol", "balonpie", "balompie", "club", "liga", "partido", "jornada",
+            "gol", "entrenador", "delantero", "defensa", "portero", "laliga", "la liga",
+            "champions", "copa del rey", "estadio", "derbi"
+    };
+    private static final String[] PALABRAS_NO_FUTBOL = {
+            "basket", "baloncesto", "basquet", "basketball", "nba", "acb", "euroliga",
+            "eurocup", "wnba", "liga endesa"
+    };
 
     private static String lastTeamCached = "";
     private static long lastFetchTimeMs = 0L;
@@ -137,44 +148,26 @@ public class NoticiasFragment extends Fragment {
 
         ExecutorService executor = asegurarEjecutor();
         Runnable requestTask = () -> {
-            HttpURLConnection connection = null;
             try {
-                String query = URLEncoder.encode(equipo, StandardCharsets.UTF_8.name());
-                String endpoint = "https://newsapi.org/v2/everything?q=" + query
-                        + "&language=es&pageSize=" + NEWS_PAGE_SIZE + "&sortBy=publishedAt";
+                String equipoLimpio = equipo.trim();
+                String queryEquipo = construirQueryEquipo(equipoLimpio);
+                String queryFutbol = "(" + queryEquipo + ") AND "
+                        + CLAUSULA_FUTBOL + " " + CLAUSULA_EXCLUIR_NO_FUTBOL;
+                String querySoloEquipo = "(" + queryEquipo + ") " + CLAUSULA_EXCLUIR_NO_FUTBOL;
 
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(10000);
-                connection.setReadTimeout(10000);
-                connection.setRequestProperty("X-Api-Key", BuildConfig.NEWS_API_KEY);
-                connection.setRequestProperty("User-Agent", "SoccerExplorer-Android");
-                connection.setRequestProperty("Accept", "application/json");
-
-                int responseCode = connection.getResponseCode();
-                InputStream inputStream;
-                if (responseCode >= 200 && responseCode < 300) {
-                    inputStream = connection.getInputStream();
-                } else {
-                    inputStream = connection.getErrorStream();
-                }
-
-                String response = leerInputStream(inputStream);
-                if (responseCode < 200 || responseCode >= 300) {
-                    publicarError(obtenerMensajeErrorApi(responseCode, response));
+                List<NoticiasAdapter.NoticiaItem> noticias = solicitarNoticiasConFallback(
+                        equipoLimpio,
+                        queryFutbol,
+                        querySoloEquipo
+                );
+                if (noticias == null) {
                     return;
                 }
 
-                List<NoticiasAdapter.NoticiaItem> noticias = parsearNoticias(response);
                 actualizarCache(equipo, noticias);
                 publicarNoticias(noticias);
             } catch (Exception e) {
                 publicarError(obtenerTextoRecurso(R.string.news_error_network));
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
             }
         };
 
@@ -182,6 +175,107 @@ public class NoticiasFragment extends Fragment {
             executor.execute(requestTask);
         } catch (RejectedExecutionException ignored) {
             asegurarEjecutor().execute(requestTask);
+        }
+    }
+
+    @Nullable
+    private List<NoticiasAdapter.NoticiaItem> solicitarNoticiasConFallback(@NonNull String equipo,
+                                                                            @NonNull String queryFutbol,
+                                                                            @NonNull String querySoloEquipo) throws Exception {
+        ApiResponse intentoTopHeadlines = ejecutarRequest(construirUrlTopHeadlines(queryFutbol));
+        if (!intentoTopHeadlines.isOk()) {
+            publicarError(obtenerMensajeErrorApi(intentoTopHeadlines.responseCode, intentoTopHeadlines.body));
+            return null;
+        }
+
+        List<NoticiasAdapter.NoticiaItem> noticiasTopHeadlines = parsearNoticias(intentoTopHeadlines.body, equipo);
+        if (!noticiasTopHeadlines.isEmpty()) {
+            return noticiasTopHeadlines;
+        }
+
+        ApiResponse intentoTopHeadlinesSoloEquipo = ejecutarRequest(construirUrlTopHeadlines(querySoloEquipo));
+        if (!intentoTopHeadlinesSoloEquipo.isOk()) {
+            publicarError(obtenerMensajeErrorApi(intentoTopHeadlinesSoloEquipo.responseCode, intentoTopHeadlinesSoloEquipo.body));
+            return null;
+        }
+
+        List<NoticiasAdapter.NoticiaItem> noticiasTopHeadlinesSoloEquipo = parsearNoticias(intentoTopHeadlinesSoloEquipo.body, equipo);
+        if (!noticiasTopHeadlinesSoloEquipo.isEmpty()) {
+            return noticiasTopHeadlinesSoloEquipo;
+        }
+
+        ApiResponse intentoEverything = ejecutarRequest(construirUrlEverything(queryFutbol));
+        if (!intentoEverything.isOk()) {
+            publicarError(obtenerMensajeErrorApi(intentoEverything.responseCode, intentoEverything.body));
+            return null;
+        }
+
+        return parsearNoticias(intentoEverything.body, equipo);
+    }
+
+    @NonNull
+    private String construirQueryEquipo(@NonNull String equipo) {
+        String equipoNormalizado = equipo.trim().toLowerCase();
+        switch (equipoNormalizado) {
+            case "valencia":
+            case "valencia cf":
+                return "\"Valencia CF\" OR \"Valencia C.F.\" OR \"Valencia Club de Futbol\" OR \"Valencia Club de Fútbol\" OR valencianista OR Valencia";
+            case "levante":
+            case "levante ud":
+                return "\"Levante UD\" OR \"Levante U.D.\" OR \"Levante Union Deportiva\" OR \"Levante Unión Deportiva\" OR granota OR Levante";
+            case "getafe":
+            case "getafe cf":
+                return "\"Getafe CF\" OR \"Getafe C.F.\" OR \"Getafe Club de Futbol\" OR \"Getafe Club de Fútbol\" OR Getafe";
+            case "barcelona":
+            case "fc barcelona":
+                return "\"FC Barcelona\" OR Barcelona OR Barça OR Barca";
+            case "atletico madrid":
+            case "atletico de madrid":
+            case "atlético de madrid":
+                return "\"Atletico de Madrid\" OR \"Atlético de Madrid\" OR \"Atletico Madrid\" OR colchonero";
+            default:
+                return "\"" + equipo + "\"";
+        }
+    }
+
+    @NonNull
+    private String construirUrlTopHeadlines(@NonNull String query) throws Exception {
+        String queryEncoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name());
+        return "https://newsapi.org/v2/top-headlines?country=es&category=sports&pageSize="
+                + NEWS_PAGE_SIZE + "&q=" + queryEncoded;
+    }
+
+    @NonNull
+    private String construirUrlEverything(@NonNull String query) throws Exception {
+        String queryEncoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name());
+        return "https://newsapi.org/v2/everything?language=es&pageSize=" + NEWS_PAGE_SIZE
+                + "&sortBy=relevancy&searchIn=title,description&q=" + queryEncoded;
+    }
+
+    @NonNull
+    private ApiResponse ejecutarRequest(@NonNull String endpoint) throws Exception {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(endpoint);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty("X-Api-Key", BuildConfig.NEWS_API_KEY);
+            connection.setRequestProperty("User-Agent", "SoccerExplorer-Android");
+            connection.setRequestProperty("Accept", "application/json");
+
+            int responseCode = connection.getResponseCode();
+            InputStream inputStream = responseCode >= 200 && responseCode < 300
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+
+            String body = leerInputStream(inputStream);
+            return new ApiResponse(responseCode, body);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
@@ -202,8 +296,10 @@ public class NoticiasFragment extends Fragment {
     }
 
     @NonNull
-    private List<NoticiasAdapter.NoticiaItem> parsearNoticias(@NonNull String response) throws Exception {
+    private List<NoticiasAdapter.NoticiaItem> parsearNoticias(@NonNull String response,
+                                                              @NonNull String equipo) throws Exception {
         List<NoticiasAdapter.NoticiaItem> noticias = new ArrayList<>();
+        List<String> terminosEquipo = obtenerTerminosEquipoFiltro(equipo);
         JSONObject root = new JSONObject(response);
         JSONArray articles = root.optJSONArray("articles");
         if (articles == null) {
@@ -218,6 +314,12 @@ public class NoticiasFragment extends Fragment {
 
             String titulo = article.optString("title", "").trim();
             if (titulo.isEmpty()) {
+                continue;
+            }
+
+            String descripcion = article.optString("description", "");
+            String contenido = article.optString("content", "");
+            if (!esNoticiaRelacionadaConEquipoYFutbol(titulo, descripcion, contenido, terminosEquipo)) {
                 continue;
             }
 
@@ -246,6 +348,96 @@ public class NoticiasFragment extends Fragment {
         }
 
         return noticias;
+    }
+
+    @NonNull
+    private List<String> obtenerTerminosEquipoFiltro(@NonNull String equipo) {
+        String equipoNormalizado = equipo.trim().toLowerCase();
+        List<String> terminos = new ArrayList<>();
+
+        switch (equipoNormalizado) {
+            case "valencia":
+            case "valencia cf":
+                terminos.add("valencia cf");
+                terminos.add("valencia c.f");
+                terminos.add("valencia club de futbol");
+                terminos.add("valencia club de fútbol");
+                terminos.add("valencianista");
+                terminos.add("valencia");
+                break;
+            case "levante":
+            case "levante ud":
+                terminos.add("levante ud");
+                terminos.add("levante u.d");
+                terminos.add("levante union deportiva");
+                terminos.add("levante unión deportiva");
+                terminos.add("granota");
+                terminos.add("levante");
+                break;
+            case "getafe":
+            case "getafe cf":
+                terminos.add("getafe cf");
+                terminos.add("getafe c.f");
+                terminos.add("getafe club de futbol");
+                terminos.add("getafe club de fútbol");
+                terminos.add("getafe");
+                break;
+            case "barcelona":
+            case "fc barcelona":
+                terminos.add("fc barcelona");
+                terminos.add("barcelona");
+                terminos.add("barça");
+                terminos.add("barca");
+                break;
+            case "atletico madrid":
+            case "atletico de madrid":
+            case "atlético de madrid":
+                terminos.add("atletico de madrid");
+                terminos.add("atlético de madrid");
+                terminos.add("atletico madrid");
+                terminos.add("colchonero");
+                break;
+            default:
+                terminos.add(equipoNormalizado);
+                break;
+        }
+
+        return terminos;
+    }
+
+    private boolean esNoticiaRelacionadaConEquipoYFutbol(@NonNull String titulo,
+                                                          @NonNull String descripcion,
+                                                          @NonNull String contenido,
+                                                          @NonNull List<String> terminosEquipo) {
+        String textoCompleto = (titulo + " " + descripcion + " " + contenido).toLowerCase();
+
+        if (!contieneAlgunTermino(textoCompleto, terminosEquipo)) {
+            return false;
+        }
+
+        if (!contieneAlgunTermino(textoCompleto, PALABRAS_FUTBOL)) {
+            return false;
+        }
+
+        return !contieneAlgunTermino(textoCompleto, PALABRAS_NO_FUTBOL);
+    }
+
+    private boolean contieneAlgunTermino(@NonNull String texto, @NonNull List<String> terminos) {
+        for (String termino : terminos) {
+            if (texto.contains(termino)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean contieneAlgunTermino(@NonNull String texto, @NonNull String[] terminos) {
+        for (String termino : terminos) {
+            if (texto.contains(termino)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @NonNull
@@ -389,6 +581,21 @@ public class NoticiasFragment extends Fragment {
         intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_URL, noticia.url);
         intent.putExtra(NewsWebViewActivity.EXTRA_NEWS_TITLE, noticia.titulo);
         startActivity(intent);
+    }
+
+    private static class ApiResponse {
+        final int responseCode;
+        @NonNull
+        final String body;
+
+        ApiResponse(int responseCode, @NonNull String body) {
+            this.responseCode = responseCode;
+            this.body = body;
+        }
+
+        boolean isOk() {
+            return responseCode >= 200 && responseCode < 300;
+        }
     }
 
     @Override
