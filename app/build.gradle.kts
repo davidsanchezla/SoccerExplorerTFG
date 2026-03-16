@@ -13,6 +13,8 @@ if (localPropertiesFile.exists()) {
 }
 
 val newsApiKey = localProperties.getProperty("NEWS_API_KEY", "")
+val apiFootballKey = localProperties.getProperty("API_FOOTBALL_KEY", "")
+val footballDataApiKey = localProperties.getProperty("FOOTBALL_DATA_API_KEY", apiFootballKey)
 
 android {
     namespace = "com.example.soccerexplorer"
@@ -31,6 +33,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "NEWS_API_KEY", "\"$newsApiKey\"")
+        buildConfigField("String", "API_FOOTBALL_KEY", "\"$apiFootballKey\"")
+        buildConfigField("String", "FOOTBALL_DATA_API_KEY", "\"$footballDataApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

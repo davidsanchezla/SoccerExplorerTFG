@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
-    android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp">
-
-    <ImageView
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:contentDescription="@string/tab_matches"
-        android:src="@drawable/ic_soccer_ball"
-        android:tint="@color/primary" />
+    android:padding="12dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/tab_matches_placeholder_title"
+        android:text="@string/matches_title"
         android:textColor="@color/text_primary"
         android:textSize="24sp"
         android:textStyle="bold" />
@@ -26,10 +19,90 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:text="@string/tab_matches_placeholder_message"
+        android:layout_marginTop="4dp"
+        android:text="@string/matches_subtitle"
         android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+        android:textSize="13sp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="@string/matches_league_hint"
+        app:boxBackgroundColor="@color/background_secondary"
+        app:boxStrokeColor="@color/primary"
+        app:endIconMode="dropdown_menu"
+        app:hintTextColor="@color/text_secondary"
+        app:startIconDrawable="@drawable/ic_soccer_ball"
+        app:startIconTint="@color/text_secondary">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/actvLeague"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:maxLines="1"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            tools:text="LaLiga EA Sports" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="@string/matches_round_hint"
+        app:boxBackgroundColor="@color/background_secondary"
+        app:boxStrokeColor="@color/primary"
+        app:endIconMode="dropdown_menu"
+        app:hintTextColor="@color/text_secondary"
+        app:startIconDrawable="@android:drawable/ic_menu_agenda"
+        app:startIconTint="@color/text_secondary">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/actvRound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:maxLines="1"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            tools:text="Regular Season - 26" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <ProgressBar
+        android:id="@+id/pbMatches"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:indeterminateTint="@color/primary"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvMatchesStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@color/background_secondary"
+        android:padding="10dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="Cargando partidos..."
+        tools:visibility="visible" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMatches"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:nestedScrollingEnabled="false"
+        tools:itemCount="4"
+        tools:listitem="@layout/item_partido" />
 
 </LinearLayout>
