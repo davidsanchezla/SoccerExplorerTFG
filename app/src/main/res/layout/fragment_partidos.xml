@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/background_primary"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="14dp">
 
     <TextView
         android:layout_width="wrap_content"
@@ -25,51 +25,34 @@
         android:textSize="13sp" />
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilMatchesDate"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/matches_league_hint"
+        android:layout_marginTop="14dp"
+        android:hint="@string/matches_date_hint"
         app:boxBackgroundColor="@color/background_secondary"
         app:boxStrokeColor="@color/primary"
-        app:endIconMode="dropdown_menu"
+        app:endIconDrawable="@android:drawable/ic_menu_my_calendar"
+        app:endIconTint="@color/primary"
         app:hintTextColor="@color/text_secondary"
         app:startIconDrawable="@drawable/ic_soccer_ball"
         app:startIconTint="@color/text_secondary">
 
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/actvLeague"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etMatchesDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:clickable="true"
+            android:cursorVisible="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:importantForAutofill="no"
             android:inputType="none"
             android:maxLines="1"
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_secondary"
-            tools:text="LaLiga EA Sports" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:hint="@string/matches_round_hint"
-        app:boxBackgroundColor="@color/background_secondary"
-        app:boxStrokeColor="@color/primary"
-        app:endIconMode="dropdown_menu"
-        app:hintTextColor="@color/text_secondary"
-        app:startIconDrawable="@android:drawable/ic_menu_agenda"
-        app:startIconTint="@color/text_secondary">
-
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/actvRound"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:maxLines="1"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
-            tools:text="Regular Season - 26" />
+            tools:text="Hoy - Martes, 17 marzo 2026" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <ProgressBar
@@ -78,7 +61,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="14dp"
         android:indeterminateTint="@color/primary"
         android:visibility="gone" />
 
@@ -86,9 +69,12 @@
         android:id="@+id/tvMatchesStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@color/background_secondary"
-        android:padding="10dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_news_chip"
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp"
         android:textColor="@color/text_secondary"
         android:textSize="13sp"
         android:visibility="gone"
@@ -99,10 +85,12 @@
         android:id="@+id/rvMatches"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:nestedScrollingEnabled="false"
-        tools:itemCount="4"
+        android:paddingBottom="6dp"
+        tools:itemCount="6"
         tools:listitem="@layout/item_partido" />
 
 </LinearLayout>

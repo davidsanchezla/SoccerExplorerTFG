@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -14,54 +15,89 @@ import com.bumptech.glide.Glide;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PartidosAdapter extends RecyclerView.Adapter<PartidosAdapter.PartidoViewHolder> {
+public class PartidosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private final List<PartidoItem> partidos = new ArrayList<>();
+    private static final int TYPE_HEADER = 0;
+    private static final int TYPE_MATCH = 1;
 
-    void actualizarPartidos(@NonNull List<PartidoItem> nuevosPartidos) {
-        partidos.clear();
-        partidos.addAll(nuevosPartidos);
+    private final List<RowItem> items = new ArrayList<>();
+
+    void actualizarItems(@NonNull List<RowItem> nuevosItems) {
+        items.clear();
+        items.addAll(nuevosItems);
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return items.get(position).type;
     }
 
     @NonNull
     @Override
-    public PartidoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_partido, parent, false);
-        return new PartidoViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_HEADER) {
+            View headerView = inflater.inflate(R.layout.item_competicion_header, parent, false);
+            return new HeaderViewHolder(headerView);
+        }
+        View matchView = inflater.inflate(R.layout.item_partido, parent, false);
+        return new PartidoViewHolder(matchView);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull PartidoViewHolder holder, int position) {
-        PartidoItem item = partidos.get(position);
-        holder.tvHomeTeam.setText(item.homeTeam);
-        holder.tvAwayTeam.setText(item.awayTeam);
-        holder.tvScoreOrTime.setText(item.scoreOrTime);
-        holder.tvMatchStatus.setText(item.status);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        RowItem rowItem = items.get(position);
 
-        if (item.round == null || item.round.trim().isEmpty()) {
-            holder.tvMatchRound.setVisibility(View.GONE);
-        } else {
-            holder.tvMatchRound.setVisibility(View.VISIBLE);
-            holder.tvMatchRound.setText(item.round);
+        if (holder instanceof HeaderViewHolder) {
+            ((HeaderViewHolder) holder).tvCompetitionHeader.setText(rowItem.headerTitle);
+            return;
         }
 
-        Glide.with(holder.itemView.getContext())
+        PartidoItem item = rowItem.partido;
+        if (item == null) {
+            return;
+        }
+
+        PartidoViewHolder partidoHolder = (PartidoViewHolder) holder;
+
+        partidoHolder.tvHomeTeam.setText(item.homeTeam);
+        partidoHolder.tvAwayTeam.setText(item.awayTeam);
+        partidoHolder.tvScoreOrTime.setText(item.scoreOrTime);
+        partidoHolder.tvMatchStatus.setText(item.status);
+
+        if (item.round == null || item.round.trim().isEmpty()) {
+            partidoHolder.tvMatchRound.setVisibility(View.GONE);
+        } else {
+            partidoHolder.tvMatchRound.setVisibility(View.VISIBLE);
+            partidoHolder.tvMatchRound.setText(item.round);
+        }
+
+        Glide.with(partidoHolder.itemView.getContext())
                 .load(item.homeLogo)
                 .placeholder(R.mipmap.ic_launcher_round)
                 .error(R.mipmap.ic_launcher_round)
-                .into(holder.ivHomeLogo);
+                .into(partidoHolder.ivHomeLogo);
 
-        Glide.with(holder.itemView.getContext())
+        Glide.with(partidoHolder.itemView.getContext())
                 .load(item.awayLogo)
                 .placeholder(R.mipmap.ic_launcher_round)
                 .error(R.mipmap.ic_launcher_round)
-                .into(holder.ivAwayLogo);
+                .into(partidoHolder.ivAwayLogo);
     }
 
     @Override
     public int getItemCount() {
-        return partidos.size();
+        return items.size();
+    }
+
+    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+        final TextView tvCompetitionHeader;
+
+        HeaderViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvCompetitionHeader = itemView.findViewById(R.id.tvCompetitionHeader);
+        }
     }
 
     static class PartidoViewHolder extends RecyclerView.ViewHolder {
@@ -85,8 +121,33 @@ public class PartidosAdapter extends RecyclerView.Adapter<PartidosAdapter.Partid
         }
     }
 
+    static class RowItem {
+        final int type;
+        @Nullable
+        final String headerTitle;
+        @Nullable
+        final PartidoItem partido;
+
+        private RowItem(int type, @Nullable String headerTitle, @Nullable PartidoItem partido) {
+            this.type = type;
+            this.headerTitle = headerTitle;
+            this.partido = partido;
+        }
+
+        @NonNull
+        static RowItem header(@NonNull String title) {
+            return new RowItem(TYPE_HEADER, title, null);
+        }
+
+        @NonNull
+        static RowItem match(@NonNull PartidoItem partido) {
+            return new RowItem(TYPE_MATCH, null, partido);
+        }
+    }
+
     static class PartidoItem {
         final String round;
+        final String competitionName;
         final String homeTeam;
         final String awayTeam;
         final String scoreOrTime;
@@ -97,6 +158,7 @@ public class PartidosAdapter extends RecyclerView.Adapter<PartidosAdapter.Partid
         final String sortTime;
 
         PartidoItem(String round,
+                    String competitionName,
                     String homeTeam,
                     String awayTeam,
                     String scoreOrTime,
@@ -106,6 +168,7 @@ public class PartidosAdapter extends RecyclerView.Adapter<PartidosAdapter.Partid
                     boolean live,
                     String sortTime) {
             this.round = round;
+            this.competitionName = competitionName;
             this.homeTeam = homeTeam;
             this.awayTeam = awayTeam;
             this.scoreOrTime = scoreOrTime;

@@ -69,9 +69,10 @@
     <string name="tab_matches_placeholder_title">Partidos</string>
     <string name="tab_matches_placeholder_message">Aqui veras tus partidos favoritos proximamente.</string>
     <string name="matches_title">Partidos</string>
-    <string name="matches_subtitle">Consulta jornadas y partidos en vivo o proximos.</string>
-    <string name="matches_league_hint">Selecciona liga</string>
-    <string name="matches_round_hint">Selecciona jornada</string>
+    <string name="matches_subtitle">Partidos del dia agrupados por competicion.</string>
+    <string name="matches_date_hint">Selecciona fecha</string>
+    <string name="matches_date_picker_title">Elegir dia de partidos</string>
+    <string name="matches_date_today_format">Hoy - %1$s</string>
     <string name="matches_round_item">Jornada %1$d</string>
     <string name="matches_team_logo_desc">Escudo del equipo</string>
     <string name="matches_status_live_min">En vivo - %1$d min</string>
@@ -87,10 +88,9 @@
     <string name="matches_error_rate_limit">Demasiadas peticiones a API-FOOTBALL. Espera e intentalo de nuevo.</string>
     <string name="matches_error_network">Error de red cargando partidos.</string>
     <string name="matches_error_api">Error API-FOOTBALL (%1$d).</string>
-    <string name="matches_error_load_league">No se pudo cargar la liga seleccionada.</string>
-    <string name="matches_error_no_rounds">No hay jornadas disponibles para esta liga.</string>
     <string name="matches_error_parse">No se pudo procesar la respuesta de partidos.</string>
     <string name="matches_empty">No hay partidos para la jornada seleccionada.</string>
+    <string name="matches_empty_date">No hay partidos para %1$s.</string>
     <string name="tab_map_placeholder_title">Mapa</string>
     <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
     <string name="map_title">Mapa OpenStreetMap</string>
