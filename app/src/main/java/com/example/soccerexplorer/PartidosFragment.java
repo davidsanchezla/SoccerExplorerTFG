@@ -1,6 +1,8 @@
 package com.example.soccerexplorer;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -53,9 +56,12 @@ public class PartidosFragment extends Fragment {
     private static final DateTimeFormatter API_DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter SORT_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmm", Locale.ROOT);
     private static final DateTimeFormatter MATCH_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm", APP_LOCALE);
-    private static final long API_QUERY_BUFFER_DAYS = 1L;
+    private static final long REQUEST_DEBOUNCE_MS = 450L;
+    private static final long MATCHES_CACHE_TTL_MS = 20L * 60L * 1000L;
+    private static final long GLOBAL_RATE_LIMIT_COOLDOWN_MS = 2L * 60L * 1000L;
 
     private static final Map<String, LigaInfo> LIGAS = new LinkedHashMap<>();
+    private static final Map<String, String> COMPETITION_CODE_TO_NAME = new LinkedHashMap<>();
 
     static {
         LIGAS.put("Serie A", new LigaInfo("SA"));
@@ -70,6 +76,10 @@ public class PartidosFragment extends Fragment {
         LIGAS.put("Ligue 1", new LigaInfo("FL1"));
         LIGAS.put("Eredivisie", new LigaInfo("DED"));
         LIGAS.put("Liga Portuguesa", new LigaInfo("PPL"));
+
+        for (Map.Entry<String, LigaInfo> entry : LIGAS.entrySet()) {
+            COMPETITION_CODE_TO_NAME.put(entry.getValue().apiCode, entry.getKey());
+        }
     }
 
     private TextInputEditText etMatchesDate;
@@ -79,6 +89,15 @@ public class PartidosFragment extends Fragment {
 
     private PartidosAdapter partidosAdapter;
     private ExecutorService executorService;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Map<String, DateCacheEntry> dateCache = new ConcurrentHashMap<>();
+
+    @Nullable
+    private Runnable pendingLoadRunnable;
+
+    private int requestSequence = 0;
+    private volatile int activeRequestId = 0;
+    private volatile long globalRateLimitCooldownUntilMs = 0L;
 
     @NonNull
     private LocalDate selectedDate = LocalDate.now(APP_ZONE);
@@ -103,7 +122,7 @@ public class PartidosFragment extends Fragment {
 
         configurarSelectorFecha(view);
         actualizarTextoFecha();
-        cargarPartidosPorFecha(selectedDate);
+        programarCargaPartidos(selectedDate, true);
 
         return view;
     }
@@ -138,7 +157,7 @@ public class PartidosFragment extends Fragment {
 
             selectedDate = pickedDate;
             actualizarTextoFecha();
-            cargarPartidosPorFecha(selectedDate);
+            programarCargaPartidos(selectedDate, false);
         });
 
         picker.show(getParentFragmentManager(), "matches-date-picker");
@@ -165,55 +184,72 @@ public class PartidosFragment extends Fragment {
         return base;
     }
 
-    private void cargarPartidosPorFecha(@NonNull LocalDate requestDate) {
+    private void programarCargaPartidos(@NonNull LocalDate requestDate, boolean immediate) {
+        if (pendingLoadRunnable != null) {
+            mainHandler.removeCallbacks(pendingLoadRunnable);
+            pendingLoadRunnable = null;
+        }
+
+        final int requestId = ++requestSequence;
+        activeRequestId = requestId;
+
+        Runnable runnable = () -> {
+            pendingLoadRunnable = null;
+            cargarPartidosPorFecha(requestDate, requestId);
+        };
+        pendingLoadRunnable = runnable;
+
+        long delayMs = immediate ? 0L : REQUEST_DEBOUNCE_MS;
+        mainHandler.postDelayed(runnable, delayMs);
+    }
+
+    private void cargarPartidosPorFecha(@NonNull LocalDate requestDate, int requestId) {
+        if (requestId != activeRequestId) {
+            return;
+        }
+
+        String dateKey = requestDate.toString();
+        DateCacheEntry cachedDate = dateCache.get(dateKey);
+        long nowMs = System.currentTimeMillis();
+        if (cachedDate != null && (nowMs - cachedDate.savedAtMs) <= MATCHES_CACHE_TTL_MS) {
+            publicarPartidos(cachedDate.rows, requestDate, requestId);
+            return;
+        }
+
+        if (globalRateLimitCooldownUntilMs > nowMs) {
+            publicarError(getString(R.string.matches_error_rate_limit));
+            return;
+        }
+
         mostrarCarga(true);
         ocultarEstado();
         partidosAdapter.actualizarItems(new ArrayList<>());
-
-        final String apiDateFrom = API_DATE_FORMAT.format(requestDate.minusDays(API_QUERY_BUFFER_DAYS));
-        final String apiDateTo = API_DATE_FORMAT.format(requestDate.plusDays(API_QUERY_BUFFER_DAYS));
+        final String apiDate = API_DATE_FORMAT.format(requestDate);
 
         executorService.execute(() -> {
-            Map<String, List<PartidosAdapter.PartidoItem>> grouped = new LinkedHashMap<>();
-            String firstError = null;
-            boolean anySuccess = false;
-
-            for (Map.Entry<String, LigaInfo> entry : LIGAS.entrySet()) {
-                String competitionName = entry.getKey();
-                LigaInfo ligaInfo = entry.getValue();
-
-                ApiResult result = ejecutarGet(
-                        "/competitions/" + ligaInfo.apiCode + "/matches?dateFrom=" + apiDateFrom + "&dateTo=" + apiDateTo
-                );
-
-                if (!result.ok) {
-                    if (firstError == null) {
-                        firstError = resultadoApiToMessage(result);
-                    }
-                    continue;
-                }
-
-                anySuccess = true;
-                try {
-                    List<PartidosAdapter.PartidoItem> partidos = parsePartidos(result.body, competitionName, requestDate);
-                    if (!partidos.isEmpty()) {
-                        ordenarPartidos(partidos);
-                        grouped.put(competitionName, partidos);
-                    }
-                } catch (Exception e) {
-                    if (firstError == null) {
-                        firstError = getString(R.string.matches_error_parse);
-                    }
-                }
-            }
-
-            if (!anySuccess && firstError != null) {
-                publicarError(firstError);
+            if (requestId != activeRequestId) {
                 return;
             }
 
-            List<PartidosAdapter.RowItem> rows = buildRows(grouped);
-            publicarPartidos(rows, requestDate);
+            ApiResult result = ejecutarGet("/matches?date=" + apiDate);
+            if (!result.ok) {
+                if (result.code == 429) {
+                    globalRateLimitCooldownUntilMs = System.currentTimeMillis() + GLOBAL_RATE_LIMIT_COOLDOWN_MS;
+                }
+                publicarError(resultadoApiToMessage(result));
+                return;
+            }
+
+            List<PartidosAdapter.RowItem> rows;
+            try {
+                rows = parsePartidosDelDia(result.body, requestDate);
+            } catch (Exception e) {
+                publicarError(getString(R.string.matches_error_parse));
+                return;
+            }
+
+            dateCache.put(dateKey, new DateCacheEntry(rows, System.currentTimeMillis()));
+            publicarPartidos(rows, requestDate, requestId);
         });
     }
 
@@ -255,15 +291,17 @@ public class PartidosFragment extends Fragment {
     }
 
     @NonNull
-    private List<PartidosAdapter.PartidoItem> parsePartidos(@NonNull String body,
-                                                            @NonNull String competitionName,
-                                                            @NonNull LocalDate requestDate) throws Exception {
-        List<PartidosAdapter.PartidoItem> partidos = new ArrayList<>();
+    private List<PartidosAdapter.RowItem> parsePartidosDelDia(@NonNull String body,
+                                                               @NonNull LocalDate requestDate) throws Exception {
+        Map<String, List<PartidosAdapter.PartidoItem>> grouped = new LinkedHashMap<>();
+        for (String competitionName : LIGAS.keySet()) {
+            grouped.put(competitionName, new ArrayList<>());
+        }
 
         JSONObject root = new JSONObject(body);
         JSONArray matches = root.optJSONArray("matches");
         if (matches == null) {
-            return partidos;
+            return new ArrayList<>();
         }
 
         for (int i = 0; i < matches.length(); i++) {
@@ -272,69 +310,93 @@ public class PartidosFragment extends Fragment {
                 continue;
             }
 
-            JSONObject homeTeamObj = item.optJSONObject("homeTeam");
-            JSONObject awayTeamObj = item.optJSONObject("awayTeam");
-            JSONObject scoreObj = item.optJSONObject("score");
-            JSONObject fullTimeObj = scoreObj != null ? scoreObj.optJSONObject("fullTime") : null;
-
-            String homeTeam = homeTeamObj != null ? homeTeamObj.optString("name", "-") : "-";
-            String awayTeam = awayTeamObj != null ? awayTeamObj.optString("name", "-") : "-";
-            String homeLogo = homeTeamObj != null ? homeTeamObj.optString("crest", null) : null;
-            String awayLogo = awayTeamObj != null ? awayTeamObj.optString("crest", null) : null;
-
-            int matchday = item.optInt("matchday", -1);
-            String round = matchday > 0 ? getString(R.string.matches_round_item, matchday) : "";
-
-            String statusCode = item.optString("status", "");
-            String utcDate = item.optString("utcDate", "");
-
-            boolean live = ESTADO_LIVE.equals(statusCode) || ESTADO_PAUSED.equals(statusCode);
-            boolean scheduled = ESTADO_SCHEDULED.equals(statusCode) || ESTADO_TIMED.equals(statusCode);
-
-            String scoreOrTime;
-            String statusText;
-            String sortTime;
-
-            LocalDateTime localDateTime = parseUtcToMadrid(utcDate);
-            if (localDateTime == null || !requestDate.equals(localDateTime.toLocalDate())) {
+            JSONObject competitionObj = item.optJSONObject("competition");
+            String competitionCode = competitionObj != null ? competitionObj.optString("code", "") : "";
+            String competitionName = COMPETITION_CODE_TO_NAME.get(competitionCode);
+            if (competitionName == null) {
                 continue;
             }
 
-            sortTime = localDateTime.format(SORT_TIME_FORMAT);
-
-            if (scheduled) {
-                scoreOrTime = localDateTime.format(MATCH_TIME_FORMAT);
-                statusText = getString(R.string.matches_status_upcoming);
-            } else {
-                Integer homeGoals = fullTimeObj != null && !fullTimeObj.isNull("home") ? fullTimeObj.optInt("home") : null;
-                Integer awayGoals = fullTimeObj != null && !fullTimeObj.isNull("away") ? fullTimeObj.optInt("away") : null;
-
-                String homeGoalsText = homeGoals == null ? "-" : String.valueOf(homeGoals);
-                String awayGoalsText = awayGoals == null ? "-" : String.valueOf(awayGoals);
-                scoreOrTime = homeGoalsText + " - " + awayGoalsText;
-
-                if (live) {
-                    statusText = getString(R.string.matches_status_live);
-                } else {
-                    statusText = traducirEstado(statusCode);
-                }
+            PartidosAdapter.PartidoItem partido = parsePartidoDesdeObjeto(item, competitionName, requestDate);
+            if (partido == null) {
+                continue;
             }
 
-            partidos.add(new PartidosAdapter.PartidoItem(
-                    round,
-                    competitionName,
-                    homeTeam,
-                    awayTeam,
-                    scoreOrTime,
-                    statusText,
-                    homeLogo,
-                    awayLogo,
-                    live,
-                    sortTime
-            ));
+            List<PartidosAdapter.PartidoItem> partidosLiga = grouped.get(competitionName);
+            if (partidosLiga != null) {
+                partidosLiga.add(partido);
+            }
         }
 
-        return partidos;
+        for (List<PartidosAdapter.PartidoItem> partidos : grouped.values()) {
+            ordenarPartidos(partidos);
+        }
+
+        return buildRows(grouped);
+    }
+
+    @Nullable
+    private PartidosAdapter.PartidoItem parsePartidoDesdeObjeto(@NonNull JSONObject item,
+                                                                @NonNull String competitionName,
+                                                                @NonNull LocalDate requestDate) {
+        JSONObject homeTeamObj = item.optJSONObject("homeTeam");
+        JSONObject awayTeamObj = item.optJSONObject("awayTeam");
+        JSONObject scoreObj = item.optJSONObject("score");
+        JSONObject fullTimeObj = scoreObj != null ? scoreObj.optJSONObject("fullTime") : null;
+
+        String homeTeam = homeTeamObj != null ? homeTeamObj.optString("name", "-") : "-";
+        String awayTeam = awayTeamObj != null ? awayTeamObj.optString("name", "-") : "-";
+        String homeLogo = homeTeamObj != null ? homeTeamObj.optString("crest", null) : null;
+        String awayLogo = awayTeamObj != null ? awayTeamObj.optString("crest", null) : null;
+
+        int matchday = item.optInt("matchday", -1);
+        String round = matchday > 0 ? getString(R.string.matches_round_item, matchday) : "";
+
+        String statusCode = item.optString("status", "");
+        String utcDate = item.optString("utcDate", "");
+
+        boolean live = ESTADO_LIVE.equals(statusCode) || ESTADO_PAUSED.equals(statusCode);
+        boolean scheduled = ESTADO_SCHEDULED.equals(statusCode) || ESTADO_TIMED.equals(statusCode);
+
+        LocalDateTime localDateTime = parseUtcToMadrid(utcDate);
+        if (localDateTime == null || !requestDate.equals(localDateTime.toLocalDate())) {
+            return null;
+        }
+
+        String sortTime = localDateTime.format(SORT_TIME_FORMAT);
+        String scoreOrTime;
+        String statusText;
+
+        if (scheduled) {
+            scoreOrTime = localDateTime.format(MATCH_TIME_FORMAT);
+            statusText = getString(R.string.matches_status_upcoming);
+        } else {
+            Integer homeGoals = fullTimeObj != null && !fullTimeObj.isNull("home") ? fullTimeObj.optInt("home") : null;
+            Integer awayGoals = fullTimeObj != null && !fullTimeObj.isNull("away") ? fullTimeObj.optInt("away") : null;
+
+            String homeGoalsText = homeGoals == null ? "-" : String.valueOf(homeGoals);
+            String awayGoalsText = awayGoals == null ? "-" : String.valueOf(awayGoals);
+            scoreOrTime = homeGoalsText + " - " + awayGoalsText;
+
+            if (live) {
+                statusText = getString(R.string.matches_status_live);
+            } else {
+                statusText = traducirEstado(statusCode);
+            }
+        }
+
+        return new PartidosAdapter.PartidoItem(
+                round,
+                competitionName,
+                homeTeam,
+                awayTeam,
+                scoreOrTime,
+                statusText,
+                homeLogo,
+                awayLogo,
+                live,
+                sortTime
+        );
     }
 
     @NonNull
@@ -442,13 +504,14 @@ public class PartidosFragment extends Fragment {
     }
 
     private void publicarPartidos(@NonNull List<PartidosAdapter.RowItem> rows,
-                                  @NonNull LocalDate requestDate) {
+                                  @NonNull LocalDate requestDate,
+                                  int requestId) {
         if (!isAdded()) {
             return;
         }
 
         requireActivity().runOnUiThread(() -> {
-            if (!isAdded() || !selectedDate.equals(requestDate)) {
+            if (!isAdded() || requestId != activeRequestId || !selectedDate.equals(requestDate)) {
                 return;
             }
 
@@ -520,6 +583,12 @@ public class PartidosFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (pendingLoadRunnable != null) {
+            mainHandler.removeCallbacks(pendingLoadRunnable);
+            pendingLoadRunnable = null;
+        }
+        activeRequestId = -1;
+
         if (executorService != null) {
             executorService.shutdownNow();
             executorService = null;
@@ -532,6 +601,17 @@ public class PartidosFragment extends Fragment {
 
         LigaInfo(@NonNull String apiCode) {
             this.apiCode = apiCode;
+        }
+    }
+
+    private static class DateCacheEntry {
+        @NonNull
+        final List<PartidosAdapter.RowItem> rows;
+        final long savedAtMs;
+
+        DateCacheEntry(@NonNull List<PartidosAdapter.RowItem> rows, long savedAtMs) {
+            this.rows = new ArrayList<>(rows);
+            this.savedAtMs = savedAtMs;
         }
     }
 
