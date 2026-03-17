@@ -2,8 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    android:background="@color/background_secondary"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_news_card_surface"
     android:orientation="vertical"
     android:padding="12dp">
 
@@ -11,7 +11,7 @@
         android:id="@+id/tvMatchRound"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_secondary"
+        android:textColor="@color/primary"
         android:textSize="12sp"
         android:textStyle="bold"
         android:visibility="gone" />
@@ -74,6 +74,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:background="@drawable/bg_news_chip"
+        android:paddingStart="8dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="3dp"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
