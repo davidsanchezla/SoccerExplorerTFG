@@ -35,18 +35,13 @@ android {
         buildConfigField("String", "NEWS_API_KEY", "\"$newsApiKey\"")
         buildConfigField("String", "API_FOOTBALL_KEY", "\"$apiFootballKey\"")
         buildConfigField("String", "FOOTBALL_DATA_API_KEY", "\"$footballDataApiKey\"")
-        buildConfigField("boolean", "QUINIELA_DEBUG_MODE", "false")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        debug {
-            buildConfigField("boolean", "QUINIELA_DEBUG_MODE", "true")
-        }
         release {
             isMinifyEnabled = false
-            buildConfigField("boolean", "QUINIELA_DEBUG_MODE", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
