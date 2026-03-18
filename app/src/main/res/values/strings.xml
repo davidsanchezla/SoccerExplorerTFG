@@ -151,6 +151,12 @@
     <string name="quiniela_error_api">Error API football-data (%1$d).</string>
     <string name="quiniela_error_save">No se pudieron guardar los pronosticos.</string>
     <string name="quiniela_error_calculate">No se pudo calcular la puntuacion de la jornada.</string>
+    <string name="quiniela_debug_simulate_button">Simular cierre jornada (debug)</string>
+    <string name="quiniela_debug_dialog_title">Simular cierre de jornada</string>
+    <string name="quiniela_debug_option_zero">0 aciertos</string>
+    <string name="quiniela_debug_option_half">50%% aciertos</string>
+    <string name="quiniela_debug_option_full">Pleno</string>
+    <string name="quiniela_debug_done">Simulacion aplicada: %1$d aciertos.</string>
     <string name="rank_canterano">Canterano</string>
     <string name="rank_amateur">Amateur</string>
     <string name="rank_profesional">Profesional</string>
