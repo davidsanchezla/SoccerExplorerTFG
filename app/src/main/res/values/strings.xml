@@ -107,6 +107,20 @@
     <string name="tab_search_input_hint">Buscar...</string>
     <string name="tab_profile_placeholder_title">Perfil</string>
     <string name="tab_profile_placeholder_message">Aqui ira la vista de perfil.</string>
+    <string name="profile_title">Perfil</string>
+    <string name="profile_subtitle">Tu informacion basica de usuario.</string>
+    <string name="profile_avatar_desc">Avatar del perfil</string>
+    <string name="profile_email_label">Correo electronico</string>
+    <string name="profile_favorite_team_label">Equipo favorito</string>
+    <string name="profile_edit_button">Editar perfil (proximamente)</string>
+    <string name="profile_quiniela_button">Quiniela</string>
+    <string name="profile_logout_button">Cerrar sesion</string>
+    <string name="profile_quiniela_placeholder">Quiniela proximamente.</string>
+    <string name="profile_value_not_logged">No has iniciado sesion</string>
+    <string name="profile_value_not_available">No disponible</string>
+    <string name="profile_value_not_selected">Aun no seleccionado</string>
+    <string name="profile_status_not_logged">No hay sesion activa.</string>
+    <string name="profile_status_error_load">No se pudo cargar el perfil.</string>
     <string name="main_toolbar_subtitle">Tu futbol en tiempo real</string>
 
     <string name="news_title">Noticias de tu equipo</string>
