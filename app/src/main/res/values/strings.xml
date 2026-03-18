@@ -116,10 +116,16 @@
     <string name="profile_title">Perfil</string>
     <string name="profile_subtitle">Tu informacion basica de usuario.</string>
     <string name="profile_avatar_desc">Avatar del perfil</string>
+    <string name="profile_team_shield_desc">Escudo del equipo favorito</string>
     <string name="profile_email_label">Correo electronico</string>
     <string name="profile_favorite_team_label">Equipo favorito</string>
+    <string name="profile_level_label">Nivel</string>
+    <string name="profile_experience_label">Experiencia</string>
+    <string name="profile_experience_value_format">%1$d XP</string>
+    <string name="profile_experience_progress_format">%1$d / %2$d XP para nivel %3$d</string>
     <string name="profile_edit_button">Editar perfil (proximamente)</string>
     <string name="profile_quiniela_button">Quiniela</string>
+    <string name="profile_change_team_button">Cambiar equipo</string>
     <string name="profile_logout_button">Cerrar sesion</string>
     <string name="profile_quiniela_placeholder">Quiniela proximamente.</string>
     <string name="profile_value_not_logged">No has iniciado sesion</string>
