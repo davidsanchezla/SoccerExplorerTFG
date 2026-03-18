@@ -1,24 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
-    android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp">
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:contentDescription="@string/tab_search"
-        android:src="@android:drawable/ic_menu_search"
-        app:tint="@color/primary" />
+    android:padding="16dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:text="@string/tab_search_placeholder_title"
         android:textColor="@color/text_primary"
         android:textSize="24sp"
@@ -27,17 +19,16 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:text="@string/tab_search_placeholder_message"
+        android:layout_marginTop="4dp"
+        android:text="@string/search_subtitle"
         android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+        android:textSize="13sp" />
 
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="12dp"
         android:hint="@string/tab_search_input_hint"
         app:boxBackgroundColor="@color/background_secondary"
         app:boxStrokeColor="@color/primary"
@@ -46,12 +37,47 @@
         app:startIconTint="@color/text_secondary">
 
         <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"
+            android:imeOptions="actionDone"
             android:inputType="text"
+            android:maxLines="1"
             android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary" />
+            android:textColorHint="@color/text_secondary"
+            tools:text="B" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <ProgressBar
+        android:id="@+id/pbSearch"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:indeterminateTint="@color/primary"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvSearchStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@color/background_secondary"
+        android:padding="10dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="No hay resultados" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSearchResults"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:nestedScrollingEnabled="false"
+        tools:itemCount="8"
+        tools:listitem="@layout/item_search_result" />
 
 </LinearLayout>
