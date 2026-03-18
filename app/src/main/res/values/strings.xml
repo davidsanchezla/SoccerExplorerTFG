@@ -105,6 +105,12 @@
     <string name="tab_search_placeholder_title">Buscador</string>
     <string name="tab_search_placeholder_message">Aqui podras buscar equipos, ligas y noticias proximamente.</string>
     <string name="tab_search_input_hint">Buscar...</string>
+    <string name="search_subtitle">Busca por primera letra. Primero competiciones, luego equipos y selecciones.</string>
+    <string name="search_competition_subtitle">Competicion</string>
+    <string name="search_national_team_subtitle">Seleccion</string>
+    <string name="search_status_hint">Escribe para buscar por inicio del nombre (ej: B).</string>
+    <string name="search_status_empty">No hay resultados para esa busqueda.</string>
+    <string name="search_error_load">No se pudieron cargar los datos del buscador.</string>
     <string name="tab_profile_placeholder_title">Perfil</string>
     <string name="tab_profile_placeholder_message">Aqui ira la vista de perfil.</string>
     <string name="profile_title">Perfil</string>
