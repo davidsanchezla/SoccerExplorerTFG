@@ -7,6 +7,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -52,6 +53,9 @@ public class QuinielaActivity extends AppCompatActivity {
 
     private static final int XP_PER_HIT = 10;
     private static final int XP_FULL_WEEK_BONUS = 50;
+    private static final int DEBUG_RESULT_ZERO = 0;
+    private static final int DEBUG_RESULT_HALF = 1;
+    private static final int DEBUG_RESULT_FULL = 2;
 
     private static final Map<String, String> LIGA_ID_TO_API_CODE = new HashMap<>();
 
@@ -79,6 +83,7 @@ public class QuinielaActivity extends AppCompatActivity {
     private View pbQuiniela;
     private RecyclerView rvQuiniela;
     private MaterialButton btnGuardarQuiniela;
+    private MaterialButton btnDebugSimularCierre;
 
     private QuinielaAdapter quinielaAdapter;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -112,6 +117,7 @@ public class QuinielaActivity extends AppCompatActivity {
         pbQuiniela = findViewById(R.id.pbQuiniela);
         rvQuiniela = findViewById(R.id.rvQuiniela);
         btnGuardarQuiniela = findViewById(R.id.btnGuardarQuiniela);
+        btnDebugSimularCierre = findViewById(R.id.btnDebugSimularCierre);
 
         toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
@@ -127,6 +133,7 @@ public class QuinielaActivity extends AppCompatActivity {
         rvQuiniela.setAdapter(quinielaAdapter);
 
         btnGuardarQuiniela.setOnClickListener(v -> guardarPronosticos());
+        configurarModoDebug();
 
         if (currentUser == null) {
             mostrarEstado(getString(R.string.quiniela_error_no_user), true);
@@ -136,6 +143,143 @@ public class QuinielaActivity extends AppCompatActivity {
 
         semanaId = obtenerSemanaIdActual();
         cargarPerfilYQuiniela();
+    }
+
+    private void configurarModoDebug() {
+        if (!BuildConfig.QUINIELA_DEBUG_MODE) {
+            btnDebugSimularCierre.setVisibility(View.GONE);
+            return;
+        }
+
+        btnDebugSimularCierre.setVisibility(View.VISIBLE);
+        btnDebugSimularCierre.setOnClickListener(v -> abrirDialogoDebugSimulacion());
+    }
+
+    private void abrirDialogoDebugSimulacion() {
+        if (esTorneoNoSoportado(userLigaId)) {
+            mostrarEstado(getString(R.string.quiniela_error_tournament_not_supported), true);
+            return;
+        }
+
+        if (matches.isEmpty()) {
+            mostrarEstado(getString(R.string.quiniela_error_no_matches), true);
+            return;
+        }
+
+        String[] options = new String[]{
+                getString(R.string.quiniela_debug_option_zero),
+                getString(R.string.quiniela_debug_option_half),
+                getString(R.string.quiniela_debug_option_full)
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.quiniela_debug_dialog_title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        simularCierreJornadaDebug(DEBUG_RESULT_ZERO);
+                    } else if (which == 1) {
+                        simularCierreJornadaDebug(DEBUG_RESULT_HALF);
+                    } else if (which == 2) {
+                        simularCierreJornadaDebug(DEBUG_RESULT_FULL);
+                    }
+                })
+                .show();
+    }
+
+    private void simularCierreJornadaDebug(int mode) {
+        if (!BuildConfig.QUINIELA_DEBUG_MODE || matches.isEmpty()) {
+            return;
+        }
+
+        if (mode == DEBUG_RESULT_FULL || mode == DEBUG_RESULT_HALF) {
+            for (MatchItem item : matches) {
+                if (!pronosticos.containsKey(item.matchId)) {
+                    pronosticos.put(item.matchId, "1");
+                }
+            }
+        }
+
+        int totalPartidos = matches.size();
+        int aciertosObjetivo = mode == DEBUG_RESULT_ZERO
+                ? 0
+                : mode == DEBUG_RESULT_FULL ? totalPartidos : (totalPartidos / 2);
+
+        List<MatchItem> simulados = new ArrayList<>();
+        int aciertosAsignados = 0;
+
+        for (int i = 0; i < matches.size(); i++) {
+            MatchItem original = matches.get(i);
+            String pick = pickNormalizado(pronosticos.get(original.matchId));
+
+            boolean debeAcierto = aciertosAsignados < aciertosObjetivo;
+            String resultadoFinal = debeAcierto ? pick : pickContrario(pick);
+            String marcador = marcadorDesdeResultado(resultadoFinal);
+
+            if (debeAcierto) {
+                aciertosAsignados++;
+            }
+
+            simulados.add(new MatchItem(
+                    original.matchId,
+                    original.homeTeam,
+                    original.awayTeam,
+                    original.homeLogo,
+                    original.awayLogo,
+                    "FINISHED",
+                    original.meta,
+                    original.kickoffEpochMs,
+                    true,
+                    true,
+                    resultadoFinal,
+                    marcador
+            ));
+        }
+
+        matches.clear();
+        matches.addAll(simulados);
+        jornadaEmpezada = true;
+        jornadaFinalizada = true;
+        quinielaCerrada = false;
+
+        quinielaAdapter.actualizarItems(
+                construirRowsActuales(),
+                new HashMap<>(pronosticos),
+                false,
+                true
+        );
+        actualizarEstadoBotonGuardar();
+        mostrarEstado(getString(R.string.quiniela_debug_done, aciertosAsignados), true);
+        calcularYPersistirPuntosSiCorresponde();
+    }
+
+    @NonNull
+    private String pickNormalizado(@Nullable String pick) {
+        if ("1".equals(pick) || "X".equals(pick) || "2".equals(pick)) {
+            return pick;
+        }
+        return "1";
+    }
+
+    @NonNull
+    private String pickContrario(@NonNull String pick) {
+        if ("1".equals(pick)) {
+            return "2";
+        }
+        if ("2".equals(pick)) {
+            return "1";
+        }
+        return "1";
+    }
+
+    @NonNull
+    private String marcadorDesdeResultado(@NonNull String resultadoFinal) {
+        if ("1".equals(resultadoFinal)) {
+            return "2 - 1";
+        }
+        if ("2".equals(resultadoFinal)) {
+            return "0 - 1";
+        }
+        return "1 - 1";
     }
 
     private void cargarPerfilYQuiniela() {

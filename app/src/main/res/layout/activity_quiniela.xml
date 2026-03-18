@@ -96,6 +96,18 @@
             android:textAllCaps="false"
             android:textColor="@color/on_primary" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDebugSimularCierre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/accent_coral"
+            android:text="@string/quiniela_debug_simulate_button"
+            android:textAllCaps="false"
+            android:textColor="@color/on_primary"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
 </LinearLayout>
