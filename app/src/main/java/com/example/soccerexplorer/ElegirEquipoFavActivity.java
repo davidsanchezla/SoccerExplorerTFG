@@ -35,15 +35,19 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.temporal.WeekFields;
 
 public class ElegirEquipoFavActivity extends AppCompatActivity {
 
@@ -353,9 +357,24 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
         update.put("onboardingCompleted", true);
         update.put("updatedAt", FieldValue.serverTimestamp());
 
-        firestore.collection("users")
-                .document(currentUser.getUid())
-                .set(update, SetOptions.merge())
+        Map<String, Object> quinielaActual = new HashMap<>();
+        quinielaActual.put("semanaId", obtenerSemanaIdActual());
+        quinielaActual.put("ligaId", ligaSeleccionada.id);
+        quinielaActual.put("pronosticos", new HashMap<String, Object>());
+        quinielaActual.put("puntosSemana", 0L);
+        quinielaActual.put("cerrada", false);
+        quinielaActual.put("updatedAt", FieldValue.serverTimestamp());
+
+        DocumentReference userRef = firestore.collection("users")
+                .document(currentUser.getUid());
+        DocumentReference quinielaActualRef = userRef
+                .collection("quinielaActual")
+                .document("actual");
+
+        WriteBatch batch = firestore.batch();
+        batch.set(userRef, update, SetOptions.merge());
+        batch.set(quinielaActualRef, quinielaActual, SetOptions.merge());
+        batch.commit()
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(this, R.string.fav_team_saved, Toast.LENGTH_SHORT).show();
                     navegarAPrincipal();
@@ -364,6 +383,15 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
                     btnGuardarEquipo.setEnabled(true);
                     Toast.makeText(this, R.string.fav_team_error_save, Toast.LENGTH_LONG).show();
                 });
+    }
+
+    @NonNull
+    private String obtenerSemanaIdActual() {
+        LocalDate hoy = LocalDate.now();
+        WeekFields weekFields = WeekFields.ISO;
+        int semana = hoy.get(weekFields.weekOfWeekBasedYear());
+        int anioSemana = hoy.get(weekFields.weekBasedYear());
+        return String.format(Locale.ROOT, "%04d-W%02d", anioSemana, semana);
     }
     // endregion
 
