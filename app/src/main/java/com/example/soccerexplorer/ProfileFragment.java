@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,9 +44,13 @@ public class ProfileFragment extends Fragment {
     }
 
     private void configurarAcciones() {
-        btnProfileQuiniela.setOnClickListener(v ->
-                Toast.makeText(requireContext(), R.string.profile_quiniela_placeholder, Toast.LENGTH_SHORT).show()
-        );
+        btnProfileQuiniela.setOnClickListener(v -> {
+            if (!isAdded()) {
+                return;
+            }
+            Intent intent = new Intent(requireContext(), QuinielaActivity.class);
+            startActivity(intent);
+        });
 
         btnProfileLogout.setOnClickListener(v -> cerrarSesion());
     }
