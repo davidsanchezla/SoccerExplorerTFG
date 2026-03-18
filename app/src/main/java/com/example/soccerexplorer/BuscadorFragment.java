@@ -22,8 +22,10 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class BuscadorFragment extends Fragment {
 
@@ -118,8 +120,11 @@ public class BuscadorFragment extends Fragment {
 
         final int total = competitionItems.size();
         final int[] done = {0};
+        final Map<String, TeamItem> uniqueTeamsByName = new LinkedHashMap<>();
 
         for (CompetitionItem competition : competitionItems) {
+            boolean isInternationalCompetition = esCompeticionInternacional(competition.name);
+
             FirebaseFirestore.getInstance()
                     .collection("competiciones")
                     .document(competition.id)
@@ -135,17 +140,34 @@ public class BuscadorFragment extends Fragment {
                             if (teamName == null || teamName.trim().isEmpty()) {
                                 teamName = teamId;
                             }
-                            teams.add(new TeamItem(teamId, teamName, competition.name));
+                            TeamItem newItem = new TeamItem(
+                                    teamId,
+                                    teamName,
+                                    competition.name,
+                                    isInternationalCompetition
+                            );
+
+                            String key = construirClaveUnicaEquipo(teamName);
+                            TeamItem existing = uniqueTeamsByName.get(key);
+                            if (existing == null) {
+                                uniqueTeamsByName.put(key, newItem);
+                            } else if (existing.isInternationalCompetition && !newItem.isInternationalCompetition) {
+                                uniqueTeamsByName.put(key, newItem);
+                            }
                         });
 
                         done[0]++;
                         if (done[0] >= total) {
+                            teams.clear();
+                            teams.addAll(uniqueTeamsByName.values());
                             cargarSelecciones();
                         }
                     })
                     .addOnFailureListener(e -> {
                         done[0]++;
                         if (done[0] >= total) {
+                            teams.clear();
+                            teams.addAll(uniqueTeamsByName.values());
                             cargarSelecciones();
                         }
                     });
@@ -167,7 +189,12 @@ public class BuscadorFragment extends Fragment {
                         if (nombre == null || nombre.trim().isEmpty()) {
                             nombre = id;
                         }
-                        nationalTeams.add(new TeamItem(id, nombre, getString(R.string.search_national_team_subtitle)));
+                        nationalTeams.add(new TeamItem(
+                                id,
+                                nombre,
+                                getString(R.string.search_national_team_subtitle),
+                                false
+                        ));
                     });
 
                     mostrarCarga(false);
@@ -272,6 +299,62 @@ public class BuscadorFragment extends Fragment {
         }
     }
 
+    private boolean esCompeticionInternacional(@NonNull String competitionName) {
+        String normalized = normalizeText(competitionName);
+
+        return normalized.contains("champions")
+                || normalized.contains("europa league")
+                || normalized.contains("conference league")
+                || normalized.contains("supercopa de europa")
+                || normalized.contains("libertadores")
+                || normalized.contains("sudamericana")
+                || normalized.contains("mundial")
+                || normalized.contains("fifa")
+                || normalized.contains("uefa")
+                || normalized.contains("conmebol")
+                || normalized.contains("concacaf")
+                || normalized.contains("afc")
+                || normalized.contains("caf")
+                || normalized.contains("nations league")
+                || normalized.contains("copa america")
+                || normalized.contains("eurocopa")
+                || normalized.contains("european championship")
+                || normalized.contains("world cup");
+    }
+
+    @NonNull
+    private String construirClaveUnicaEquipo(@NonNull String teamName) {
+        String canonical = normalizarNombreEquipo(teamName);
+        if (canonical.isEmpty()) {
+            canonical = normalizeText(teamName);
+        }
+        return canonical;
+    }
+
+    @NonNull
+    private String normalizarNombreEquipo(@NonNull String rawName) {
+        String normalized = normalizeText(rawName)
+                .replace('.', ' ')
+                .replace('-', ' ')
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        normalized = normalized
+                .replaceAll("\\b(fc|cf|sc|ac|afc|cfc|cd|ud|sad)\\b", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        if (normalized.equals("ajax amsterdam")) {
+            return "ajax";
+        }
+
+        if (normalized.startsWith("arsenal ")) {
+            return "arsenal";
+        }
+
+        return normalized;
+    }
+
     @NonNull
     private String normalizeText(@NonNull String input) {
         String normalized = Normalizer.normalize(input.toLowerCase(Locale.ROOT), Normalizer.Form.NFD);
@@ -305,11 +388,16 @@ public class BuscadorFragment extends Fragment {
         final String id;
         final String name;
         final String subtitle;
+        final boolean isInternationalCompetition;
 
-        TeamItem(@NonNull String id, @NonNull String name, @NonNull String subtitle) {
+        TeamItem(@NonNull String id,
+                 @NonNull String name,
+                 @NonNull String subtitle,
+                 boolean isInternationalCompetition) {
             this.id = id;
             this.name = name;
             this.subtitle = subtitle;
+            this.isInternationalCompetition = isInternationalCompetition;
         }
     }
 }
