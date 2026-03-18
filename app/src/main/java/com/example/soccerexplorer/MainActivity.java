@@ -15,7 +15,7 @@ public class MainActivity extends AppCompatActivity {
     private final PartidosFragment partidosFragment = new PartidosFragment();
     private final MapaFragment mapFragment = new MapaFragment();
     private final BuscadorFragment buscadorFragment = new BuscadorFragment();
-    private Fragment profileFragment;
+    private final ProfileFragment profileFragment = new ProfileFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,12 +53,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (item.getItemId() == R.id.nav_profile) {
-                if (profileFragment == null) {
-                    profileFragment = PlaceholderFragment.newInstance(
-                            getString(R.string.tab_profile_placeholder_title),
-                            getString(R.string.tab_profile_placeholder_message)
-                    );
-                }
                 abrirFragmento(profileFragment);
                 return true;
             }
