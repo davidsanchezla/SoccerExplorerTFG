@@ -39,14 +39,31 @@
             android:textStyle="bold"
             tools:text="Liga PD · Semana 2026-W11" />
 
-        <TextView
-            android:id="@+id/tvQuinielaRank"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            tools:text="Rango: Canterano (1) · XP: 0" />
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/ivQuinielaRankBadge"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:contentDescription="@string/profile_level_label"
+                android:scaleType="fitCenter"
+                android:src="@drawable/canterano"
+                tools:src="@drawable/leyenda" />
+
+            <TextView
+                android:id="@+id/tvQuinielaRank"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                tools:text="Rango: Canterano (1) · XP: 0" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvQuinielaStatus"
