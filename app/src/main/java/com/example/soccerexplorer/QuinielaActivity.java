@@ -2,6 +2,7 @@ package com.example.soccerexplorer;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -75,6 +76,7 @@ public class QuinielaActivity extends AppCompatActivity {
     private TextView tvQuinielaHeader;
     private TextView tvQuinielaRank;
     private TextView tvQuinielaStatus;
+    private ImageView ivQuinielaRankBadge;
     private View pbQuiniela;
     private RecyclerView rvQuiniela;
     private MaterialButton btnGuardarQuiniela;
@@ -108,6 +110,7 @@ public class QuinielaActivity extends AppCompatActivity {
         tvQuinielaHeader = findViewById(R.id.tvQuinielaHeader);
         tvQuinielaRank = findViewById(R.id.tvQuinielaRank);
         tvQuinielaStatus = findViewById(R.id.tvQuinielaStatus);
+        ivQuinielaRankBadge = findViewById(R.id.ivQuinielaRankBadge);
         pbQuiniela = findViewById(R.id.pbQuiniela);
         rvQuiniela = findViewById(R.id.rvQuiniela);
         btnGuardarQuiniela = findViewById(R.id.btnGuardarQuiniela);
@@ -555,12 +558,15 @@ public class QuinielaActivity extends AppCompatActivity {
     }
 
     private void actualizarCabecera() {
-        String rankName = nombreRango(rango);
+        long normalizedRank = RankUtils.normalizarRango(rango);
+        String rankName = nombreRango(normalizedRank);
         String jornadaText = jornadaActual > 0
                 ? getString(R.string.quiniela_jornada_format, jornadaActual)
                 : getString(R.string.quiniela_jornada_unknown);
         tvQuinielaHeader.setText(getString(R.string.quiniela_header_format, userLigaId, jornadaText));
-        tvQuinielaRank.setText(getString(R.string.quiniela_rank_format, rankName, rango, experienciaTotal));
+        tvQuinielaRank.setText(getString(R.string.quiniela_rank_format, rankName, normalizedRank, experienciaTotal));
+        ivQuinielaRankBadge.setImageResource(RankUtils.drawableDesdeRango(normalizedRank));
+        ivQuinielaRankBadge.setContentDescription(rankName);
     }
 
     @NonNull
@@ -603,47 +609,12 @@ public class QuinielaActivity extends AppCompatActivity {
 
     @NonNull
     private String nombreRango(long rango) {
-        if (rango <= 1L) {
-            return getString(R.string.rank_canterano);
-        }
-        if (rango == 2L) {
-            return getString(R.string.rank_amateur);
-        }
-        if (rango == 3L) {
-            return getString(R.string.rank_profesional);
-        }
-        if (rango == 4L) {
-            return getString(R.string.rank_estrella);
-        }
-        if (rango == 5L) {
-            return getString(R.string.rank_elite);
-        }
-        if (rango == 6L) {
-            return getString(R.string.rank_maestro);
-        }
-        return getString(R.string.rank_leyenda);
+        long normalized = RankUtils.normalizarRango(rango);
+        return getString(RankUtils.stringNameResDesdeRango(normalized));
     }
 
     private long calcularRangoDesdeXp(long xp) {
-        if (xp >= 3000L) {
-            return 7L;
-        }
-        if (xp >= 1500L) {
-            return 6L;
-        }
-        if (xp >= 1000L) {
-            return 5L;
-        }
-        if (xp >= 600L) {
-            return 4L;
-        }
-        if (xp >= 300L) {
-            return 3L;
-        }
-        if (xp >= 100L) {
-            return 2L;
-        }
-        return 1L;
+        return RankUtils.calcularRangoDesdeXp(xp);
     }
 
     private boolean esTorneoNoSoportado(@NonNull String ligaId) {

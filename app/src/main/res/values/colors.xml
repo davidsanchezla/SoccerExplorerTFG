@@ -28,4 +28,12 @@
     <color name="map_cluster_start">#58A6FF</color>
     <color name="map_cluster_end">#A371F7</color>
     <color name="map_overlay_tint">#00000000</color>
+
+    <color name="rank_border_canterano">#6E7681</color>
+    <color name="rank_border_amateur">#3FB950</color>
+    <color name="rank_border_profesional">#58A6FF</color>
+    <color name="rank_border_estrella">#A371F7</color>
+    <color name="rank_border_elite">#D29922</color>
+    <color name="rank_border_maestro">#FF9830</color>
+    <color name="rank_border_leyenda">#F85149</color>
 </resources>

@@ -35,6 +35,7 @@
                     android:layout_height="126dp">
 
                     <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardProfileAvatar"
                         android:layout_width="112dp"
                         android:layout_height="112dp"
                         android:layout_gravity="center"
@@ -44,23 +45,43 @@
                         app:strokeColor="@color/primary"
                         app:strokeWidth="2dp">
 
-                        <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/ivProfileAvatar"
+                        <FrameLayout
+                            android:id="@+id/flProfileAvatarShirt"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:background="@drawable/bg_profile_avatar_gradient"
-                            android:contentDescription="@string/profile_avatar_desc"
-                            android:padding="26dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
-                            app:tint="@color/white" />
+                            android:background="@drawable/bg_profile_avatar_gradient">
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/ivProfileAvatarBase"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/profile_avatar_desc"
+                                android:padding="18dp"
+                                android:src="@drawable/ic_profile_jersey_base"
+                                android:tint="@color/white"
+                                android:tintMode="src_in"
+                                tools:tint="@color/white" />
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/ivProfileAvatarStripes"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/profile_avatar_desc"
+                                android:padding="18dp"
+                                android:src="@drawable/ic_profile_jersey_stripes"
+                                android:tint="@color/primary"
+                                android:tintMode="src_in"
+                                tools:tint="@color/primary" />
+
+                        </FrameLayout>
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
                         android:layout_gravity="bottom|end"
-                        app:cardBackgroundColor="@color/background_secondary"
-                        app:cardCornerRadius="22dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="25dp"
                         app:cardElevation="0dp"
                         app:strokeColor="@color/primary"
                         app:strokeWidth="1dp">
@@ -70,8 +91,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:contentDescription="@string/profile_team_shield_desc"
-                            android:padding="4dp"
-                            android:scaleType="centerCrop"
+                            android:padding="2dp"
+                            android:scaleType="fitCenter"
                             android:src="@mipmap/ic_launcher_round" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -179,6 +200,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <LinearLayout
@@ -200,10 +222,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:textColor="@color/primary"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            tools:text="12" />
+                            tools:text="Canterano" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -231,6 +255,7 @@
                             android:textStyle="bold"
                             tools:text="2450 XP" />
                     </LinearLayout>
+
                 </LinearLayout>
 
                 <ProgressBar
