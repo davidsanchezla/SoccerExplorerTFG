@@ -3,9 +3,11 @@ package com.example.soccerexplorer;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.MotionEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -36,6 +38,7 @@ public class BuscadorFragment extends Fragment {
     private TextInputEditText etSearch;
     private ProgressBar pbSearch;
     private TextView tvSearchStatus;
+    private View searchRoot;
 
     private BuscadorAdapter adapter;
     private final List<CompetitionItem> competitions = new ArrayList<>();
@@ -52,6 +55,7 @@ public class BuscadorFragment extends Fragment {
         etSearch = view.findViewById(R.id.etSearch);
         pbSearch = view.findViewById(R.id.pbSearch);
         tvSearchStatus = view.findViewById(R.id.tvSearchStatus);
+        searchRoot = view.findViewById(R.id.searchRoot);
 
         RecyclerView rvSearchResults = view.findViewById(R.id.rvSearchResults);
         rvSearchResults.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -59,6 +63,7 @@ public class BuscadorFragment extends Fragment {
         rvSearchResults.setAdapter(adapter);
 
         configurarBuscador();
+        configurarCierreTeclado();
         cargarDatosBase();
 
         return view;
@@ -79,6 +84,35 @@ public class BuscadorFragment extends Fragment {
             public void afterTextChanged(Editable s) {
             }
         });
+
+        etSearch.setOnEditorActionListener((v, actionId, event) -> {
+            ocultarTeclado();
+            etSearch.clearFocus();
+            return false;
+        });
+    }
+
+    private void configurarCierreTeclado() {
+        searchRoot.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (etSearch.hasFocus()) {
+                    etSearch.clearFocus();
+                    ocultarTeclado();
+                }
+            }
+            return false;
+        });
+    }
+
+    private void ocultarTeclado() {
+        if (!isAdded() || getContext() == null || getActivity() == null) {
+            return;
+        }
+        InputMethodManager imm = (InputMethodManager) requireContext()
+                .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        if (imm != null && getActivity().getCurrentFocus() != null) {
+            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+        }
     }
 
     private void cargarDatosBase() {
@@ -211,12 +245,6 @@ public class BuscadorFragment extends Fragment {
         String queryRaw = etSearch.getText() == null ? "" : etSearch.getText().toString().trim();
         String query = normalizeText(queryRaw);
 
-        if (query.isEmpty()) {
-            adapter.updateItems(new ArrayList<>());
-            mostrarEstado(getString(R.string.search_status_hint));
-            return;
-        }
-
         List<CompetitionItem> filteredCompetitions = filtrarCompeticionesPorPrefijo(query);
         List<TeamItem> filteredTeams = filtrarEquiposPorPrefijo(teams, query);
         List<TeamItem> filteredNationalTeams = filtrarEquiposPorPrefijo(nationalTeams, query);
@@ -227,6 +255,15 @@ public class BuscadorFragment extends Fragment {
         agregarSeccionSelecciones(items, filteredNationalTeams);
 
         adapter.updateItems(items);
+
+        if (query.isEmpty()) {
+            if (items.isEmpty()) {
+                mostrarEstado(getString(R.string.search_status_hint));
+            } else {
+                ocultarEstado();
+            }
+            return;
+        }
 
         if (items.isEmpty()) {
             mostrarEstado(getString(R.string.search_status_empty));
