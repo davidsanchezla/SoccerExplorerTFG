@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +22,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -128,7 +130,7 @@ public class QuinielaActivity extends AppCompatActivity {
         rvQuiniela.setLayoutManager(new LinearLayoutManager(this));
         rvQuiniela.setAdapter(quinielaAdapter);
 
-        btnGuardarQuiniela.setOnClickListener(v -> guardarPronosticos());
+        btnGuardarQuiniela.setOnClickListener(v -> confirmarGuardadoQuiniela());
 
         if (currentUser == null) {
             mostrarEstado(getString(R.string.quiniela_error_no_user), true);
@@ -196,6 +198,7 @@ public class QuinielaActivity extends AppCompatActivity {
                     if (!doc.exists()) {
                         quinielaRef.set(init, SetOptions.merge())
                                 .addOnSuccessListener(unused -> {
+                                    quinielaCerrada = false;
                                     quinielaSemanaIdGuardada = semanaId;
                                     quinielaLigaIdGuardada = userLigaId;
                                     pedirPartidosYResolverEstado();
@@ -232,6 +235,9 @@ public class QuinielaActivity extends AppCompatActivity {
                     quinielaCerrada = Boolean.TRUE.equals(doc.getBoolean("cerrada"));
                     if (quinielaCerrada) {
                         btnGuardarQuiniela.setEnabled(false);
+                        mostrarEstado(getString(R.string.quiniela_status_saved_locked), true);
+                    } else {
+                        ocultarEstado();
                     }
                     pronosticos.clear();
                     Map<String, Object> pronosticosMap = leerMapPronosticos(doc);
@@ -404,7 +410,7 @@ public class QuinielaActivity extends AppCompatActivity {
         }
     }
 
-    private void guardarPronosticos() {
+    private void confirmarGuardadoQuiniela() {
         if (currentUser == null) {
             mostrarEstado(getString(R.string.quiniela_error_no_user), true);
             return;
@@ -416,30 +422,55 @@ public class QuinielaActivity extends AppCompatActivity {
             return;
         }
 
-        if (jornadaEmpezada || quinielaCerrada) {
-            mostrarEstado(getString(R.string.quiniela_status_started_locked), true);
+        if (isQuinielaBloqueada()) {
+            int messageRes = quinielaCerrada
+                    ? R.string.quiniela_status_saved_locked
+                    : R.string.quiniela_status_started_locked;
+            mostrarEstado(getString(messageRes), true);
             return;
         }
 
-        DocumentReference quinielaRef = firestore.collection("users")
-                .document(currentUser.getUid())
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.quiniela_confirm_save_title)
+                .setMessage(R.string.quiniela_confirm_save_message)
+                .setPositiveButton(R.string.quiniela_confirm_save_yes, (dialog, which) -> guardarPronosticos())
+                .setNegativeButton(R.string.quiniela_confirm_save_no, null)
+                .show();
+    }
+
+    private void guardarPronosticos() {
+        DocumentReference userRef = firestore.collection("users")
+                .document(currentUser.getUid());
+        DocumentReference quinielaRef = userRef
                 .collection("quinielaActual")
                 .document("actual");
 
         String semanaDoc = buildSemanaIdConJornada();
+        DocumentReference historialRef = userRef
+                .collection("quinielas")
+                .document(semanaDoc);
 
         Map<String, Object> update = new HashMap<>();
         update.put("semanaId", semanaDoc);
         update.put("ligaId", userLigaId);
         update.put("pronosticos", new HashMap<>(pronosticos));
+        update.put("cerrada", true);
         update.put("updatedAt", FieldValue.serverTimestamp());
 
+        Map<String, Object> historicoBorrador = construirHistoricoBorrador(semanaDoc);
+
         btnGuardarQuiniela.setEnabled(false);
-        quinielaRef.set(update, SetOptions.merge())
+        WriteBatch batch = firestore.batch();
+        batch.set(quinielaRef, update, SetOptions.merge());
+        batch.set(historialRef, historicoBorrador, SetOptions.merge());
+        batch.commit()
                 .addOnSuccessListener(unused -> {
+                    quinielaCerrada = true;
                     quinielaSemanaIdGuardada = semanaDoc;
                     quinielaLigaIdGuardada = userLigaId;
-                    Toast.makeText(this, R.string.quiniela_saved, Toast.LENGTH_SHORT).show();
+                    ocultarEstado();
+                    Toast.makeText(this, R.string.quiniela_saved_locked, Toast.LENGTH_SHORT).show();
+                    finish();
                     actualizarEstadoBotonGuardar();
                 })
                 .addOnFailureListener(e -> {
@@ -475,20 +506,23 @@ public class QuinielaActivity extends AppCompatActivity {
         }
 
         final int aciertosFinales = aciertos;
+        final boolean bonusPleno = totalPartidos > 0 && aciertosFinales == totalPartidos;
         final int xpGanada = (aciertosFinales * XP_PER_HIT)
-                + (totalPartidos > 0 && aciertosFinales == totalPartidos ? XP_FULL_WEEK_BONUS : 0);
+                + (bonusPleno ? XP_FULL_WEEK_BONUS : 0);
+        final List<Map<String, Object>> partidosSnapshot = construirSnapshotPartidosHistorico();
 
         final DocumentReference userRef = firestore.collection("users").document(currentUser.getUid());
         final DocumentReference quinielaRef = userRef.collection("quinielaActual").document("actual");
+        final DocumentReference historialRef = userRef.collection("quinielas").document(semanaDoc);
 
         firestore.runTransaction(transaction -> {
             DocumentSnapshot userDoc = transaction.get(userRef);
             DocumentSnapshot quinielaDoc = transaction.get(quinielaRef);
+            DocumentSnapshot historialDoc = transaction.get(historialRef);
 
             String ultimaSemana = valorString(userDoc.getString("ultimaSemanaRecompensada"));
             long xpActual = valorLong(userDoc.getLong("experienciaTotal"), 0L);
             long puntosSemanaActual = valorLong(quinielaDoc.getLong("puntosSemana"), 0L);
-            boolean cerradaActual = Boolean.TRUE.equals(quinielaDoc.getBoolean("cerrada"));
             long rangoActualDb = valorLong(userDoc.getLong("rango"), calcularRangoDesdeXp(xpActual));
             boolean xpAplicada = false;
             long xpFinal = xpActual;
@@ -500,7 +534,24 @@ public class QuinielaActivity extends AppCompatActivity {
             quinielaUpdate.put("updatedAt", FieldValue.serverTimestamp());
             transaction.set(quinielaRef, quinielaUpdate, SetOptions.merge());
 
-            if (!semanaDoc.equals(ultimaSemana) && !cerradaActual) {
+            Map<String, Object> historicoUpdate = new HashMap<>();
+            historicoUpdate.put("semanaId", semanaDoc);
+            historicoUpdate.put("ligaId", userLigaId);
+            historicoUpdate.put("pronosticos", new HashMap<>(pronosticos));
+            historicoUpdate.put("puntosSemana", (long) aciertosFinales);
+            historicoUpdate.put("xpGanada", (long) xpGanada);
+            historicoUpdate.put("bonusPleno", bonusPleno);
+            historicoUpdate.put("totalPartidos", (long) totalPartidos);
+            historicoUpdate.put("partidos", partidosSnapshot);
+            historicoUpdate.put("cerrada", true);
+            historicoUpdate.put("closedAt", FieldValue.serverTimestamp());
+            historicoUpdate.put("updatedAt", FieldValue.serverTimestamp());
+            if (!historialDoc.exists()) {
+                historicoUpdate.put("createdAt", FieldValue.serverTimestamp());
+            }
+            transaction.set(historialRef, historicoUpdate, SetOptions.merge());
+
+            if (!semanaDoc.equals(ultimaSemana)) {
                 long nuevoXp = xpActual + xpGanada;
                 long nuevoRango = calcularRangoDesdeXp(nuevoXp);
                 xpFinal = nuevoXp;
@@ -592,19 +643,82 @@ public class QuinielaActivity extends AppCompatActivity {
             return;
         }
 
-        DocumentReference quinielaRef = firestore.collection("users")
-                .document(currentUser.getUid())
+        DocumentReference userRef = firestore.collection("users")
+                .document(currentUser.getUid());
+        DocumentReference quinielaRef = userRef
                 .collection("quinielaActual")
                 .document("actual");
+        DocumentReference historialRef = userRef
+                .collection("quinielas")
+                .document(semanaConJornada);
 
         Map<String, Object> reset = construirDocumentoBaseQuiniela(semanaConJornada, userLigaId);
-        quinielaRef.set(reset, SetOptions.merge())
+        WriteBatch batch = firestore.batch();
+        batch.set(quinielaRef, reset, SetOptions.merge());
+        batch.delete(historialRef);
+        batch.commit()
                 .addOnFailureListener(e -> mostrarEstado(getString(R.string.quiniela_error_save), true));
     }
 
     private void actualizarEstadoBotonGuardar() {
-        boolean editable = !jornadaEmpezada && !quinielaCerrada;
+        boolean editable = !isQuinielaBloqueada();
         btnGuardarQuiniela.setEnabled(editable && pronosticos.size() == matches.size() && !matches.isEmpty());
+    }
+
+    private boolean isQuinielaBloqueada() {
+        return jornadaEmpezada || quinielaCerrada;
+    }
+
+    @NonNull
+    private Map<String, Object> construirHistoricoBorrador(@NonNull String semanaDoc) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("semanaId", semanaDoc);
+        data.put("ligaId", userLigaId);
+        data.put("pronosticos", new HashMap<>(pronosticos));
+        data.put("puntosSemana", calcularAciertosActuales());
+        data.put("xpGanada", 0L);
+        data.put("bonusPleno", false);
+        data.put("totalPartidos", (long) matches.size());
+        data.put("partidos", construirSnapshotPartidosHistorico());
+        data.put("cerrada", true);
+        data.put("createdAt", FieldValue.serverTimestamp());
+        data.put("closedAt", FieldValue.serverTimestamp());
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        return data;
+    }
+
+    @NonNull
+    private List<Map<String, Object>> construirSnapshotPartidosHistorico() {
+        List<Map<String, Object>> snapshot = new ArrayList<>();
+        for (MatchItem item : matches) {
+            Map<String, Object> partido = new HashMap<>();
+            String pick = pronosticos.get(item.matchId);
+            boolean acierto = pick != null && item.resultadoFinal != null && pick.equals(item.resultadoFinal);
+
+            partido.put("matchId", item.matchId);
+            partido.put("local", item.homeTeam);
+            partido.put("visitante", item.awayTeam);
+            partido.put("homeLogo", item.homeLogo);
+            partido.put("awayLogo", item.awayLogo);
+            partido.put("kickoffEpochMs", item.kickoffEpochMs);
+            partido.put("pick", pick);
+            partido.put("resultado", item.resultadoFinal);
+            partido.put("marcador", item.resultadoMarcador);
+            partido.put("acierto", acierto);
+            snapshot.add(partido);
+        }
+        return snapshot;
+    }
+
+    private long calcularAciertosActuales() {
+        long aciertos = 0L;
+        for (MatchItem item : matches) {
+            String pick = pronosticos.get(item.matchId);
+            if (pick != null && item.resultadoFinal != null && pick.equals(item.resultadoFinal)) {
+                aciertos++;
+            }
+        }
+        return aciertos;
     }
 
     @NonNull
