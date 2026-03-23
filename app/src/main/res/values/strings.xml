@@ -192,4 +192,28 @@
     <string name="news_error_rate_limit">Demasiadas peticiones a NewsAPI. Espera un minuto e intentalo de nuevo.</string>
     <string name="news_error_network">Error de red al cargar noticias.</string>
     <string name="news_empty">No hay noticias para este equipo ahora mismo.</string>
+
+    <string name="historial_title">Historial de Quinielas</string>
+    <string name="historial_export_button">Compartir</string>
+    <string name="historial_save_button">Guardar</string>
+    <string name="historial_empty">No tienes quinielas guardadas todavia.</string>
+    <string name="historial_empty_hint">Completa una quiniela semanal para ver aqui tu historial.</string>
+    <string name="historial_jornada_format">Jornada %1$d</string>
+    <string name="historial_semana_format">Semana %1$s</string>
+    <string name="historial_aciertos_format">%1$d / %2$d aciertos</string>
+    <string name="historial_xp_format">+%1$d XP</string>
+    <string name="historial_bonus_pleno">Pleno!</string>
+    <string name="historial_error_load">No se pudo cargar el historial.</string>
+    <string name="historial_error_no_user">No has iniciado sesion.</string>
+    <string name="historial_pdf_title">Historial de Quinielas</string>
+    <string name="historial_pdf_generated">Generado el %1$s</string>
+    <string name="historial_pdf_partido_header">Partido</string>
+    <string name="historial_pdf_pronostico_header">Pick</string>
+    <string name="historial_pdf_resultado_header">Resultado</string>
+    <string name="historial_pdf_acierto_header">OK</string>
+    <string name="historial_pdf_resumen">Resumen: %1$d aciertos de %2$d partidos · XP ganada: %3$d</string>
+    <string name="historial_pdf_share_title">Compartir PDF</string>
+    <string name="historial_pdf_error">Error al generar el PDF.</string>
+    <string name="historial_pdf_success">PDF generado correctamente.</string>
+    <string name="profile_historial_button">Historial Quinielas</string>
 </resources>
