@@ -138,6 +138,11 @@
     <string name="quiniela_title">Quiniela semanal</string>
     <string name="quiniela_save_button">Guardar pronosticos</string>
     <string name="quiniela_saved">Pronosticos guardados.</string>
+    <string name="quiniela_saved_locked">Pronosticos guardados. La quiniela queda bloqueada para esta jornada.</string>
+    <string name="quiniela_confirm_save_title">Confirmar quiniela</string>
+    <string name="quiniela_confirm_save_message">Si guardas, no podras cambiar tus selecciones hasta la proxima jornada. ¿Estas seguro?</string>
+    <string name="quiniela_confirm_save_yes">Si, guardar</string>
+    <string name="quiniela_confirm_save_no">No</string>
     <string name="quiniela_header_format">Liga %1$s · %2$s</string>
     <string name="quiniela_jornada_format">Jornada %1$d</string>
     <string name="quiniela_jornada_unknown">Jornada -</string>
@@ -146,6 +151,7 @@
     <string name="quiniela_result_miss">Fallo</string>
     <string name="quiniela_result_line">Resultado: %1$s (%2$s)</string>
     <string name="quiniela_status_started_locked">La jornada ya ha comenzado y la quiniela se bloquea.</string>
+    <string name="quiniela_status_saved_locked">Ya guardaste esta quiniela y no se puede modificar hasta la proxima jornada.</string>
     <string name="quiniela_status_finished_points">Jornada cerrada. Aciertos: %1$d · XP ganada: %2$d.</string>
     <string name="quiniela_status_no_picks_for_jornada">No hay pronosticos guardados para esta jornada.</string>
     <string name="quiniela_error_no_user">No hay sesion iniciada.</string>
