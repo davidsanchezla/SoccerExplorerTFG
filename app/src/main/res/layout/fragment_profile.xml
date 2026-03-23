@@ -311,6 +311,19 @@
                 android:textColor="@color/on_primary" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnProfileHistorial"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="@color/background_secondary"
+                android:text="@string/profile_historial_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnProfileChangeTeam"
                 style="@style/Widget.Material3.Button"
                 android:layout_width="match_parent"
