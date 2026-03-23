@@ -46,6 +46,7 @@ public class ProfileFragment extends Fragment {
     private MaterialCardView cardProfileAvatar;
     private ProgressBar pbProfileExperience;
     private MaterialButton btnProfileQuiniela;
+    private MaterialButton btnProfileHistorial;
     private MaterialButton btnProfileChangeTeam;
     private MaterialButton btnProfileLogout;
 
@@ -70,6 +71,7 @@ public class ProfileFragment extends Fragment {
         cardProfileAvatar = view.findViewById(R.id.cardProfileAvatar);
         pbProfileExperience = view.findViewById(R.id.pbProfileExperience);
         btnProfileQuiniela = view.findViewById(R.id.btnProfileQuiniela);
+        btnProfileHistorial = view.findViewById(R.id.btnProfileHistorial);
         btnProfileChangeTeam = view.findViewById(R.id.btnProfileChangeTeam);
         btnProfileLogout = view.findViewById(R.id.btnProfileLogout);
 
@@ -87,6 +89,14 @@ public class ProfileFragment extends Fragment {
                 return;
             }
             Intent intent = new Intent(requireContext(), QuinielaActivity.class);
+            startActivity(intent);
+        });
+
+        btnProfileHistorial.setOnClickListener(v -> {
+            if (!isAdded()) {
+                return;
+            }
+            Intent intent = new Intent(requireContext(), QuinielaHistorialActivity.class);
             startActivity(intent);
         });
 
