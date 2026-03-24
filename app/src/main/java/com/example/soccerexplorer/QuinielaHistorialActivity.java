@@ -1,6 +1,13 @@
 package com.example.soccerexplorer;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -9,6 +16,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -33,6 +43,9 @@ import java.util.concurrent.Executors;
 
 public class QuinielaHistorialActivity extends AppCompatActivity {
 
+    private static final String CHANNEL_ID = "quiniela_pdf_channel";
+    private static final int NOTIFICATION_ID = 1001;
+
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
@@ -44,11 +57,14 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
 
     private QuinielaHistorialAdapter adapter;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Uri lastSavedPdfUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiniela_historial);
+
+        crearCanalNotificacion();
 
         firestore = FirebaseFirestore.getInstance();
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -295,7 +311,7 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
                 values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/pdf");
                 values.put(android.provider.MediaStore.Downloads.IS_PENDING, 1);
 
-                android.net.Uri uri = getContentResolver().insert(
+                Uri uri = getContentResolver().insert(
                         android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
 
                 if (uri != null) {
@@ -311,13 +327,16 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
                     values.clear();
                     values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0);
                     getContentResolver().update(uri, values, null, null);
+
+                    lastSavedPdfUri = uri;
                 }
 
+                final Uri finalUri = uri;
                 runOnUiThread(() -> {
                     btnExportarPdf.setEnabled(true);
                     btnGuardarPdf.setEnabled(true);
                     btnGuardarPdf.setText(R.string.historial_save_button);
-                    Toast.makeText(this, "PDF guardado en Descargas", Toast.LENGTH_LONG).show();
+                    mostrarNotificacion(finalUri, fileName);
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -356,6 +375,62 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
         rvHistorial.setVisibility(View.GONE);
         btnExportarPdf.setEnabled(false);
         btnGuardarPdf.setEnabled(false);
+    }
+
+    private void crearCanalNotificacion() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Historial de Quinielas";
+            String description = "Notificaciones al guardar PDF de quinielas";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            channel.enableVibration(true);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void mostrarNotificacion(Uri pdfUri, String fileName) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+                Toast.makeText(this, "Concede permiso de notificaciones para ver el aviso", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
+        Intent intentAbrir = new Intent(Intent.ACTION_VIEW);
+        intentAbrir.setDataAndType(pdfUri, "application/pdf");
+        intentAbrir.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                intentAbrir,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_app)
+                .setContentTitle("PDF guardado")
+                .setContentText(fileName + " - Toca para abrir")
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText(fileName + "\nGuardado en Descargas.\nToca para ver el archivo."))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setVibrate(new long[]{0, 250, 250, 250});
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        try {
+            notificationManager.notify(NOTIFICATION_ID, builder.build());
+        } catch (SecurityException e) {
+            Toast.makeText(this, "No se pudo mostrar la notificación. Permiso denegado.", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

@@ -28,7 +28,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.soccerexplorer"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
