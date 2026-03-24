@@ -46,8 +46,13 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".LoginActivity"
-            android:exported="true"
+            android:exported="false"
             android:windowSoftInputMode="adjustResize">
+        </activity>
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SoccerExplorer">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

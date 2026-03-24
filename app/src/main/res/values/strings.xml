@@ -173,6 +173,7 @@
     <string name="rank_maestro">Maestro</string>
     <string name="rank_leyenda">Leyenda</string>
     <string name="main_toolbar_subtitle">Tu futbol en tiempo real</string>
+    <string name="splash_subtitle">Tu futbol en tiempo real</string>
 
     <string name="news_title">Noticias de tu equipo</string>
     <string name="news_team_label">Equipo: %1$s</string>

@@ -69,6 +69,7 @@ public class LoginActivity extends AppCompatActivity {
             return false;
         });
         // endregion
+
     }
 
     // region UI
@@ -118,6 +119,7 @@ public class LoginActivity extends AppCompatActivity {
             etPassword.setText(sharedPreferences.getString(KEY_PASSWORD, ""));
         }
     }
+
     // endregion
 
     // region Login
