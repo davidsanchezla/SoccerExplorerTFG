@@ -41,6 +41,9 @@
             android:name=".NewsWebViewActivity"
             android:exported="false" />
         <activity
+            android:name=".TeamDetailsActivity"
+            android:exported="false" />
+        <activity
             android:name=".RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

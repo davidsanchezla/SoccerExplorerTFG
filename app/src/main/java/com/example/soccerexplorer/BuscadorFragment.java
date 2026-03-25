@@ -1,5 +1,6 @@
 package com.example.soccerexplorer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -61,6 +62,17 @@ public class BuscadorFragment extends Fragment {
         rvSearchResults.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new BuscadorAdapter();
         rvSearchResults.setAdapter(adapter);
+
+        adapter.setOnItemClickListener(item -> {
+            if (SECTION_TEAMS.equals(item.section) || SECTION_NATIONAL_TEAMS.equals(item.section)) {
+                if (item.competitionId != null) {
+                    Intent intent = new Intent(requireContext(), TeamDetailsActivity.class);
+                    intent.putExtra(TeamDetailsActivity.EXTRA_COMPETITION_CODE, item.competitionId);
+                    intent.putExtra(TeamDetailsActivity.EXTRA_TEAM_NAME, item.name);
+                    startActivity(intent);
+                }
+            }
+        });
 
         configurarBuscador();
         configurarCierreTeclado();
@@ -178,7 +190,8 @@ public class BuscadorFragment extends Fragment {
                                     teamId,
                                     teamName,
                                     competition.name,
-                                    isInternationalCompetition
+                                    isInternationalCompetition,
+                                    competition.id
                             );
 
                             String key = construirClaveUnicaEquipo(teamName);
@@ -227,7 +240,8 @@ public class BuscadorFragment extends Fragment {
                                 id,
                                 nombre,
                                 getString(R.string.search_national_team_subtitle),
-                                false
+                                false,
+                                null
                         ));
                     });
 
@@ -277,7 +291,7 @@ public class BuscadorFragment extends Fragment {
     private List<CompetitionItem> filtrarCompeticionesPorPrefijo(@NonNull String query) {
         List<CompetitionItem> result = new ArrayList<>();
         for (CompetitionItem item : competitions) {
-            if (query.isEmpty() || normalizeText(item.name).startsWith(query)) {
+            if (query.isEmpty() || normalizeText(item.name).contains(query)) {
                 result.add(item);
             }
         }
@@ -289,7 +303,7 @@ public class BuscadorFragment extends Fragment {
     private List<TeamItem> filtrarEquiposPorPrefijo(@NonNull List<TeamItem> source, @NonNull String query) {
         List<TeamItem> result = new ArrayList<>();
         for (TeamItem item : source) {
-            if (query.isEmpty() || normalizeText(item.name).startsWith(query)) {
+            if (query.isEmpty() || normalizeText(item.name).contains(query)) {
                 result.add(item);
             }
         }
@@ -305,7 +319,8 @@ public class BuscadorFragment extends Fragment {
                     SECTION_COMPETITIONS,
                     item.name,
                     getString(R.string.search_competition_subtitle),
-                    i == 0
+                    i == 0,
+                    item.id
             ));
         }
     }
@@ -318,7 +333,8 @@ public class BuscadorFragment extends Fragment {
                     SECTION_TEAMS,
                     item.name,
                     item.subtitle,
-                    i == 0
+                    i == 0,
+                    item.competitionId
             ));
         }
     }
@@ -331,7 +347,8 @@ public class BuscadorFragment extends Fragment {
                     SECTION_NATIONAL_TEAMS,
                     item.name,
                     item.subtitle,
-                    i == 0
+                    i == 0,
+                    item.competitionId
             ));
         }
     }
@@ -426,15 +443,19 @@ public class BuscadorFragment extends Fragment {
         final String name;
         final String subtitle;
         final boolean isInternationalCompetition;
+        @Nullable
+        final String competitionId;
 
         TeamItem(@NonNull String id,
                  @NonNull String name,
                  @NonNull String subtitle,
-                 boolean isInternationalCompetition) {
+                 boolean isInternationalCompetition,
+                 @Nullable String competitionId) {
             this.id = id;
             this.name = name;
             this.subtitle = subtitle;
             this.isInternationalCompetition = isInternationalCompetition;
+            this.competitionId = competitionId;
         }
     }
 }
