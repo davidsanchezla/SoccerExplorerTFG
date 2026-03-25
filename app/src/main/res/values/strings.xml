@@ -217,4 +217,19 @@
     <string name="historial_pdf_error">Error al generar el PDF.</string>
     <string name="historial_pdf_success">PDF generado correctamente.</string>
     <string name="profile_historial_button">Historial Quinielas</string>
+    <string name="team_crest">Escudo del equipo</string>
+    <string name="team_details_title">Detalles del equipo</string>
+    <string name="team_details_loading">Cargando detalles del equipo...</string>
+    <string name="team_details_error">Error cargando detalles del equipo.</string>
+    <string name="team_details_venue">Estadio: %1$s</string>
+    <string name="team_details_address">Direccion: %1$s</string>
+    <string name="team_details_website">Web: %1$s</string>
+    <string name="team_details_founded">Fundado: %1$d</string>
+    <string name="team_details_club_colors">Colores: %1$s</string>
+    <string name="team_details_area">Pais: %1$s</string>
+    <string name="team_details_running_competitions">Competiciones actuales: %1$s</string>
+    <string name="team_details_staff">Cuerpo tecnico</string>
+    <string name="team_details_squad">Plantilla</string>
+    <string name="team_details_position">Posicion: %1$s</string>
+    <string name="team_details_nationality">Nacionalidad: %1$s</string>
 </resources>

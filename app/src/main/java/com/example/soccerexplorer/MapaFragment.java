@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -131,6 +132,8 @@ public class MapaFragment extends Fragment {
     private final List<CustomTarget<Bitmap>> activeShieldTargets = new ArrayList<>();
     private boolean bloqueandoEventoChipLiga;
     private int equiposLoadGeneration = 0;
+    @Nullable
+    private LigaItem ligaSeleccionadaActual = null;
 
     @Nullable
     @Override
@@ -386,6 +389,7 @@ public class MapaFragment extends Fragment {
     }
 
     private void alSeleccionarLiga(@NonNull LigaItem liga) {
+        ligaSeleccionadaActual = liga;
         cargarEquiposLiga(liga.id);
     }
 
@@ -535,6 +539,12 @@ public class MapaFragment extends Fragment {
             cerrarInfoWindowsEquipos();
             m.showInfoWindow();
             map.getController().animateTo(m.getPosition());
+            if (ligaSeleccionadaActual != null && isAdded()) {
+                Intent intent = new Intent(requireContext(), TeamDetailsActivity.class);
+                intent.putExtra(TeamDetailsActivity.EXTRA_COMPETITION_CODE, ligaSeleccionadaActual.id);
+                intent.putExtra(TeamDetailsActivity.EXTRA_TEAM_NAME, equipo.equipo);
+                startActivity(intent);
+            }
             return true;
         });
 
