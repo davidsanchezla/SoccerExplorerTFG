@@ -10,6 +10,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -528,7 +529,7 @@ public class MapaFragment extends Fragment {
         marker.setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_TOP);
         marker.setTitle(equipo.equipo);
         marker.setSnippet(construirSubtituloMarker(equipo));
-        marker.setIcon(new BitmapDrawable(getResources(), crearIconoEquipo(null)));
+        marker.setIcon(new BitmapDrawable(getResources(), crearIconoEquipo(null, equipo.equipo)));
 
         marker.setOnMarkerClickListener((m, map) -> {
             cerrarInfoWindowsEquipos();
@@ -577,7 +578,7 @@ public class MapaFragment extends Fragment {
                 if (!isAdded() || mapView == null || equiposClusterer == null || generationAtSubmit != equiposLoadGeneration) {
                     return;
                 }
-                marker.setIcon(new BitmapDrawable(getResources(), crearIconoEquipo(resource)));
+                marker.setIcon(new BitmapDrawable(getResources(), crearIconoEquipo(resource, marker.getTitle())));
                 equiposClusterer.invalidate();
                 mapView.invalidate();
             }
@@ -637,15 +638,19 @@ public class MapaFragment extends Fragment {
     }
 
     @NonNull
-    private Bitmap crearIconoEquipo(@Nullable Bitmap escudoBitmap) {
-        int sizePx = dpToPx(60);
+    private Bitmap crearIconoEquipo(@Nullable Bitmap escudoBitmap, @Nullable String teamName) {
+        int circleDiameterPx = dpToPx(80);
+        int textAreaHeightPx = dpToPx(20);
+        int totalWidthPx = circleDiameterPx;
+        int totalHeightPx = circleDiameterPx + textAreaHeightPx;
         int paddingPx = dpToPx(8);
 
-        Bitmap bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(totalWidthPx, totalHeightPx, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
-        float center = sizePx / 2f;
-        float outerRadius = center - dpToPx(1);
+        float centerX = totalWidthPx / 2f;
+        float centerY = circleDiameterPx / 2f;
+        float outerRadius = circleDiameterPx / 2f - dpToPx(1);
 
         int white = ContextCompat.getColor(requireContext(), R.color.white);
         int coral = ContextCompat.getColor(requireContext(), R.color.accent_coral);
@@ -655,8 +660,8 @@ public class MapaFragment extends Fragment {
         fillPaint.setShader(new LinearGradient(
                 0f,
                 0f,
-                sizePx,
-                sizePx,
+                totalWidthPx,
+                totalHeightPx,
                 new int[]{white, white, coral},
                 new float[]{0f, 0.78f, 1f},
                 Shader.TileMode.CLAMP
@@ -670,35 +675,53 @@ public class MapaFragment extends Fragment {
         Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         shadowPaint.setColor(Color.parseColor("#44000000"));
 
-        canvas.drawCircle(center, center + dpToPx(1), outerRadius, shadowPaint);
-        canvas.drawCircle(center, center, outerRadius, fillPaint);
-        canvas.drawCircle(center, center, outerRadius, strokePaint);
+        canvas.drawCircle(centerX, centerY + dpToPx(1), outerRadius, shadowPaint);
+        canvas.drawCircle(centerX, centerY, outerRadius, fillPaint);
+        canvas.drawCircle(centerX, centerY, outerRadius, strokePaint);
 
         if (escudoBitmap == null || escudoBitmap.isRecycled()) {
             Paint fallbackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             fallbackPaint.setColor(ContextCompat.getColor(requireContext(), R.color.primary));
-            canvas.drawCircle(center, center, dpToPx(11), fallbackPaint);
-            return bitmap;
+            canvas.drawCircle(centerX, centerY, dpToPx(11), fallbackPaint);
+        } else {
+            float innerRadius = centerX - paddingPx;
+            BitmapShader shader = new BitmapShader(escudoBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            Matrix matrix = new Matrix();
+            float drawableSize = innerRadius * 2f;
+            float scale = Math.max(
+                    drawableSize / Math.max(1f, escudoBitmap.getWidth()),
+                    drawableSize / Math.max(1f, escudoBitmap.getHeight())
+            );
+            float dx = centerX - (escudoBitmap.getWidth() * scale) / 2f;
+            float dy = centerY - (escudoBitmap.getHeight() * scale) / 2f;
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(dx, dy);
+            shader.setLocalMatrix(matrix);
+
+            Paint imagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            imagePaint.setShader(shader);
+
+            canvas.drawCircle(centerX, centerY, innerRadius, imagePaint);
         }
 
-        float innerRadius = center - paddingPx;
-        BitmapShader shader = new BitmapShader(escudoBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        Matrix matrix = new Matrix();
-        float drawableSize = innerRadius * 2f;
-        float scale = Math.max(
-                drawableSize / Math.max(1f, escudoBitmap.getWidth()),
-                drawableSize / Math.max(1f, escudoBitmap.getHeight())
-        );
-        float dx = center - (escudoBitmap.getWidth() * scale) / 2f;
-        float dy = center - (escudoBitmap.getHeight() * scale) / 2f;
-        matrix.setScale(scale, scale);
-        matrix.postTranslate(dx, dy);
-        shader.setLocalMatrix(matrix);
+        // Dibujar nombre del equipo debajo del escudo
+        if (teamName != null && !teamName.trim().isEmpty()) {
+            String displayName = teamName.trim();
+            if (displayName.length() > 12) {
+                displayName = displayName.substring(0, 12) + "...";
+            }
 
-        Paint imagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        imagePaint.setShader(shader);
+            Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setColor(Color.WHITE);
+            textPaint.setTextSize(dpToPx(10));
+            textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+            textPaint.setTextAlign(Paint.Align.CENTER);
+            textPaint.setShadowLayer(1f, 1f, 1f, Color.BLACK);
 
-        canvas.drawCircle(center, center, innerRadius, imagePaint);
+            float textY = circleDiameterPx + dpToPx(10);
+            canvas.drawText(displayName, centerX, textY, textPaint);
+        }
+
         return bitmap;
     }
 
