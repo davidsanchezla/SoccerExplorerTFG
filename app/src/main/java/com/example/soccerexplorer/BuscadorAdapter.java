@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -18,24 +19,38 @@ public class BuscadorAdapter extends RecyclerView.Adapter<BuscadorAdapter.Search
         final String name;
         final String subtitle;
         final boolean showSectionHeader;
+        @Nullable
+        final String competitionId;
 
         SearchItem(@NonNull String section,
                    @NonNull String name,
                    @NonNull String subtitle,
-                   boolean showSectionHeader) {
+                   boolean showSectionHeader,
+                   @Nullable String competitionId) {
             this.section = section;
             this.name = name;
             this.subtitle = subtitle;
             this.showSectionHeader = showSectionHeader;
+            this.competitionId = competitionId;
         }
     }
 
+    public interface OnItemClickListener {
+        void onItemClick(@NonNull SearchItem item);
+    }
+
     private final List<SearchItem> items = new ArrayList<>();
+    @Nullable
+    private OnItemClickListener onItemClickListener;
 
     void updateItems(@NonNull List<SearchItem> newItems) {
         items.clear();
         items.addAll(newItems);
         notifyDataSetChanged();
+    }
+
+    public void setOnItemClickListener(@Nullable OnItemClickListener listener) {
+        this.onItemClickListener = listener;
     }
 
     @NonNull
@@ -58,6 +73,12 @@ public class BuscadorAdapter extends RecyclerView.Adapter<BuscadorAdapter.Search
         } else {
             holder.tvSearchSectionTitle.setVisibility(View.GONE);
         }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (onItemClickListener != null) {
+                onItemClickListener.onItemClick(item);
+            }
+        });
     }
 
     @Override
