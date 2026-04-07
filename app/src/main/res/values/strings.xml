@@ -236,7 +236,6 @@
     <string name="team_details_squad">Plantilla</string>
     <string name="team_details_position">Posicion: %1$s</string>
     <string name="team_details_nationality">Nacionalidad: %1$s</string>
-
     <string name="notif_matches_channel_name">Partidos de hoy</string>
     <string name="notif_matches_channel_desc">Avisos cuando tu equipo favorito juega hoy.</string>
     <string name="notif_matches_title">Tu equipo juega hoy</string>

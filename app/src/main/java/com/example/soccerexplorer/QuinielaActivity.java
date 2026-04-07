@@ -44,6 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -55,6 +57,7 @@ public class QuinielaActivity extends AppCompatActivity {
 
     private static final int XP_PER_HIT = 10;
     private static final int XP_FULL_WEEK_BONUS = 50;
+    private static final Pattern SEMANA_DOC_PATTERN = Pattern.compile("^(\\d{4})-W(\\d{2})(?:-J(\\d+))?$");
     private static final Map<String, String> LIGA_ID_TO_API_CODE = new HashMap<>();
 
     static {
@@ -94,11 +97,16 @@ public class QuinielaActivity extends AppCompatActivity {
     private int jornadaActual = -1;
     private String quinielaSemanaIdGuardada = "";
     private String quinielaLigaIdGuardada = "";
+    private String ultimaSemanaRecompensada = "";
     private long experienciaTotal = 0L;
     private long rango = 1L;
     private boolean jornadaEmpezada = false;
     private boolean jornadaFinalizada = false;
     private boolean quinielaCerrada = false;
+    private boolean procesandoQuinielaPendiente = false;
+
+    @Nullable
+    private PendienteLiquidacion pendienteLiquidacion = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -156,6 +164,7 @@ public class QuinielaActivity extends AppCompatActivity {
                     userLigaId = valorString(userDoc.getString("equipoFavoritoLigaId"));
                     experienciaTotal = valorLong(userDoc.getLong("experienciaTotal"), 0L);
                     rango = valorLong(userDoc.getLong("rango"), 1L);
+                    ultimaSemanaRecompensada = valorString(userDoc.getString("ultimaSemanaRecompensada"));
 
                     if (userLigaId.isEmpty()) {
                         mostrarCarga(false);
@@ -177,12 +186,162 @@ public class QuinielaActivity extends AppCompatActivity {
                     }
 
                     actualizarCabecera();
-                    cargarDocQuinielaActual();
+                    buscarQuinielaPendienteDesdeHistorial(this::cargarDocQuinielaActual);
                 })
                 .addOnFailureListener(e -> {
                     mostrarCarga(false);
                     mostrarEstado(getString(R.string.quiniela_error_profile), true);
                 });
+    }
+
+    private void buscarQuinielaPendienteDesdeHistorial(@NonNull Runnable onComplete) {
+        firestore.collection("users")
+                .document(currentUser.getUid())
+                .collection("quinielas")
+                .get()
+                .addOnSuccessListener(query -> {
+                    pendienteLiquidacion = null;
+                    int mejorPrioridad = Integer.MAX_VALUE;
+                    String semanaActualBase = obtenerSemanaIdActual();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        PendienteLiquidacion candidata = extraerPendienteDesdeDocHistorial(doc);
+                        if (candidata == null) {
+                            continue;
+                        }
+                        int prioridad = prioridadPendiente(candidata, semanaActualBase);
+                        if (pendienteLiquidacion == null
+                                || prioridad < mejorPrioridad
+                                || (prioridad == mejorPrioridad
+                                && compararSemanaDoc(candidata.semanaDoc, pendienteLiquidacion.semanaDoc) > 0)) {
+                            pendienteLiquidacion = candidata;
+                            mejorPrioridad = prioridad;
+                        }
+                    }
+                    onComplete.run();
+                })
+                .addOnFailureListener(e -> onComplete.run());
+    }
+
+    private int prioridadPendiente(@NonNull PendienteLiquidacion candidata,
+                                   @NonNull String semanaActualBase) {
+        String baseCandidata = extraerSemanaBase(candidata.semanaDoc);
+        return compararSemanaDoc(baseCandidata, semanaActualBase) < 0 ? 0 : 1;
+    }
+
+    @Nullable
+    private PendienteLiquidacion extraerPendienteDesdeDocHistorial(@NonNull DocumentSnapshot doc) {
+        String semanaDoc = valorString(doc.getString("semanaId"));
+        String ligaDoc = valorString(doc.getString("ligaId"));
+        boolean cerrada = Boolean.TRUE.equals(doc.getBoolean("cerrada"));
+        boolean xpAplicada = Boolean.TRUE.equals(doc.getBoolean("xpAplicada"));
+        if (semanaDoc.isEmpty() || ligaDoc.isEmpty() || !cerrada || xpAplicada || esTorneoNoSoportado(ligaDoc)) {
+            return null;
+        }
+
+        int jornadaDoc = extraerJornadaDesdeSemanaDoc(semanaDoc);
+        if (jornadaDoc <= 0) {
+            return null;
+        }
+
+        boolean posterior = esSemanaPosteriorARecompensa(semanaDoc, ultimaSemanaRecompensada);
+        if (!posterior) {
+            long xpGanadaDoc = valorLong(doc.getLong("xpGanada"), 0L);
+            long puntosSemanaDoc = valorLong(doc.getLong("puntosSemana"), 0L);
+            if (xpGanadaDoc > 0L || puntosSemanaDoc > 0L) {
+                return null;
+            }
+        }
+
+        Map<String, String> pronosticosDoc = leerPronosticosComoMapa(doc.get("pronosticos"));
+        if (pronosticosDoc.isEmpty()) {
+            return null;
+        }
+
+        return new PendienteLiquidacion(semanaDoc, ligaDoc, jornadaDoc, pronosticosDoc);
+    }
+
+    private int compararSemanaDoc(@NonNull String a, @NonNull String b) {
+        SemanaIdInfo aInfo = parseSemanaIdInfo(a);
+        SemanaIdInfo bInfo = parseSemanaIdInfo(b);
+        if (aInfo == null || bInfo == null) {
+            return a.compareTo(b);
+        }
+        if (aInfo.year != bInfo.year) {
+            return Integer.compare(aInfo.year, bInfo.year);
+        }
+        if (aInfo.week != bInfo.week) {
+            return Integer.compare(aInfo.week, bInfo.week);
+        }
+        return Integer.compare(aInfo.jornada, bInfo.jornada);
+    }
+
+    private boolean esSemanaPosteriorARecompensa(@NonNull String candidata, @Nullable String ultima) {
+        String ultimaNormalizada = ultima == null ? "" : ultima.trim();
+        if (ultimaNormalizada.isEmpty()) {
+            return true;
+        }
+        return compararSemanaDoc(candidata, ultimaNormalizada) > 0;
+    }
+
+    private int extraerJornadaDesdeSemanaDoc(@Nullable String semanaDoc) {
+        SemanaIdInfo info = parseSemanaIdInfo(semanaDoc);
+        if (info == null) {
+            return -1;
+        }
+        return info.jornada;
+    }
+
+    @NonNull
+    private String extraerSemanaBase(@NonNull String semanaDoc) {
+        int idx = semanaDoc.indexOf("-J");
+        if (idx > 0) {
+            return semanaDoc.substring(0, idx);
+        }
+        return semanaDoc;
+    }
+
+    @Nullable
+    private SemanaIdInfo parseSemanaIdInfo(@Nullable String semanaDoc) {
+        if (semanaDoc == null) {
+            return null;
+        }
+        Matcher matcher = SEMANA_DOC_PATTERN.matcher(semanaDoc.trim());
+        if (!matcher.matches()) {
+            return null;
+        }
+        try {
+            int year = Integer.parseInt(matcher.group(1));
+            int week = Integer.parseInt(matcher.group(2));
+            String jornadaRaw = matcher.group(3);
+            int jornada = (jornadaRaw == null || jornadaRaw.isEmpty())
+                    ? 0
+                    : Integer.parseInt(jornadaRaw);
+            return new SemanaIdInfo(year, week, jornada);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    @NonNull
+    @SuppressWarnings("unchecked")
+    private Map<String, String> leerPronosticosComoMapa(@Nullable Object rawPronosticos) {
+        Map<String, String> out = new HashMap<>();
+        if (!(rawPronosticos instanceof Map)) {
+            return out;
+        }
+
+        Map<String, Object> map = (Map<String, Object>) rawPronosticos;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            Object value = entry.getValue();
+            if (!(value instanceof String)) {
+                continue;
+            }
+            String pick = (String) value;
+            if ("1".equals(pick) || "X".equals(pick) || "2".equals(pick)) {
+                out.put(entry.getKey(), pick);
+            }
+        }
+        return out;
     }
 
     private void cargarDocQuinielaActual() {
@@ -193,6 +352,12 @@ public class QuinielaActivity extends AppCompatActivity {
 
         quinielaRef.get()
                 .addOnSuccessListener(doc -> {
+                    if (pendienteLiquidacion != null) {
+                        aplicarPendienteEnMemoria(pendienteLiquidacion);
+                        pedirPartidosYResolverEstado();
+                        return;
+                    }
+
                     Map<String, Object> init = construirDocumentoBaseQuiniela(semanaId, userLigaId);
 
                     if (!doc.exists()) {
@@ -212,8 +377,26 @@ public class QuinielaActivity extends AppCompatActivity {
 
                     String semanaDoc = valorString(doc.getString("semanaId"));
                     String ligaDoc = valorString(doc.getString("ligaId"));
+                    boolean cerradaDoc = Boolean.TRUE.equals(doc.getBoolean("cerrada"));
+                    long puntosSemanaDoc = valorLong(doc.getLong("puntosSemana"), 0L);
+                    Map<String, Object> pronosticosMap = leerMapPronosticos(doc);
                     quinielaSemanaIdGuardada = semanaDoc;
                     quinielaLigaIdGuardada = ligaDoc;
+
+                    PendienteLiquidacion pendienteDesdeActual = extraerPendienteDesdeQuinielaActualDoc(
+                            semanaDoc,
+                            ligaDoc,
+                            cerradaDoc,
+                            puntosSemanaDoc,
+                            pronosticosMap
+                    );
+                    if (pendienteDesdeActual != null) {
+                        pendienteLiquidacion = pendienteDesdeActual;
+                        aplicarPendienteEnMemoria(pendienteDesdeActual);
+                        pedirPartidosYResolverEstado();
+                        return;
+                    }
+
                     boolean semanaCompatible = semanaDoc.equals(semanaId)
                             || semanaDoc.startsWith(semanaId + "-J");
                     if (!semanaCompatible || !userLigaId.equals(ligaDoc)) {
@@ -240,7 +423,6 @@ public class QuinielaActivity extends AppCompatActivity {
                         ocultarEstado();
                     }
                     pronosticos.clear();
-                    Map<String, Object> pronosticosMap = leerMapPronosticos(doc);
                     for (Map.Entry<String, Object> entry : pronosticosMap.entrySet()) {
                         Object value = entry.getValue();
                         if (value instanceof String) {
@@ -257,6 +439,62 @@ public class QuinielaActivity extends AppCompatActivity {
                     mostrarCarga(false);
                     mostrarEstado(getString(R.string.quiniela_error_load), true);
                 });
+    }
+
+    @Nullable
+    private PendienteLiquidacion extraerPendienteDesdeQuinielaActualDoc(@NonNull String semanaDoc,
+                                                                         @NonNull String ligaDoc,
+                                                                         boolean cerradaDoc,
+                                                                         long puntosSemanaDoc,
+                                                                         @NonNull Map<String, Object> pronosticosMap) {
+        if (!cerradaDoc || semanaDoc.isEmpty() || ligaDoc.isEmpty() || esTorneoNoSoportado(ligaDoc)) {
+            return null;
+        }
+
+        int jornadaDoc = extraerJornadaDesdeSemanaDoc(semanaDoc);
+        if (jornadaDoc <= 0) {
+            return null;
+        }
+
+        boolean posterior = esSemanaPosteriorARecompensa(semanaDoc, ultimaSemanaRecompensada);
+        if (!posterior) {
+            if (puntosSemanaDoc > 0L) {
+                return null;
+            }
+        }
+
+        Map<String, String> pronosticosDoc = new HashMap<>();
+        for (Map.Entry<String, Object> entry : pronosticosMap.entrySet()) {
+            Object value = entry.getValue();
+            if (!(value instanceof String)) {
+                continue;
+            }
+            String pick = (String) value;
+            if ("1".equals(pick) || "X".equals(pick) || "2".equals(pick)) {
+                pronosticosDoc.put(entry.getKey(), pick);
+            }
+        }
+
+        if (pronosticosDoc.isEmpty()) {
+            return null;
+        }
+
+        return new PendienteLiquidacion(semanaDoc, ligaDoc, jornadaDoc, pronosticosDoc);
+    }
+
+    private void aplicarPendienteEnMemoria(@NonNull PendienteLiquidacion pendiente) {
+        procesandoQuinielaPendiente = true;
+        semanaId = extraerSemanaBase(pendiente.semanaDoc);
+        jornadaActual = pendiente.jornada;
+        userLigaId = pendiente.ligaId;
+        quinielaSemanaIdGuardada = pendiente.semanaDoc;
+        quinielaLigaIdGuardada = pendiente.ligaId;
+        quinielaCerrada = true;
+        pronosticos.clear();
+        pronosticos.putAll(pendiente.pronosticos);
+        btnGuardarQuiniela.setEnabled(false);
+        actualizarCabecera();
+        mostrarEstado("Procesando quiniela pendiente " + pendiente.semanaDoc + "...", true);
     }
 
     @NonNull
@@ -292,7 +530,9 @@ public class QuinielaActivity extends AppCompatActivity {
 
         executorService.execute(() -> {
             try {
-                int matchday = obtenerJornadaObjetivo(competitionCode);
+                int matchday = (procesandoQuinielaPendiente && pendienteLiquidacion != null)
+                        ? pendienteLiquidacion.jornada
+                        : obtenerJornadaObjetivo(competitionCode);
                 if (matchday <= 0) {
                     runOnUiThread(() -> {
                         mostrarCarga(false);
@@ -327,10 +567,15 @@ public class QuinielaActivity extends AppCompatActivity {
                 Collections.sort(parsed, (a, b) -> Long.compare(a.kickoffEpochMs, b.kickoffEpochMs));
                 runOnUiThread(() -> {
                     jornadaActual = matchday;
-                    String semanaConJornada = buildSemanaIdConJornada(jornadaActual);
-                    if (!semanaConJornada.equals(quinielaSemanaIdGuardada)
-                            || !userLigaId.equals(quinielaLigaIdGuardada)) {
-                        resetearQuinielaParaJornada(semanaConJornada);
+                    if (procesandoQuinielaPendiente && pendienteLiquidacion != null) {
+                        quinielaSemanaIdGuardada = pendienteLiquidacion.semanaDoc;
+                        quinielaLigaIdGuardada = pendienteLiquidacion.ligaId;
+                    } else {
+                        String semanaConJornada = buildSemanaIdConJornada(jornadaActual);
+                        if (!semanaConJornada.equals(quinielaSemanaIdGuardada)
+                                || !userLigaId.equals(quinielaLigaIdGuardada)) {
+                            resetearQuinielaParaJornada(semanaConJornada);
+                        }
                     }
                     matches.clear();
                     matches.addAll(parsed);
@@ -514,6 +759,7 @@ public class QuinielaActivity extends AppCompatActivity {
         final DocumentReference userRef = firestore.collection("users").document(currentUser.getUid());
         final DocumentReference quinielaRef = userRef.collection("quinielaActual").document("actual");
         final DocumentReference historialRef = userRef.collection("quinielas").document(semanaDoc);
+        final boolean forzarAplicacionPendiente = procesandoQuinielaPendiente;
 
         firestore.runTransaction(transaction -> {
             DocumentSnapshot userDoc = transaction.get(userRef);
@@ -521,12 +767,15 @@ public class QuinielaActivity extends AppCompatActivity {
             DocumentSnapshot historialDoc = transaction.get(historialRef);
 
             String ultimaSemana = valorString(userDoc.getString("ultimaSemanaRecompensada"));
+            boolean historialXpAplicada = Boolean.TRUE.equals(historialDoc.getBoolean("xpAplicada"));
             long xpActual = valorLong(userDoc.getLong("experienciaTotal"), 0L);
             long puntosSemanaActual = valorLong(quinielaDoc.getLong("puntosSemana"), 0L);
             long rangoActualDb = valorLong(userDoc.getLong("rango"), calcularRangoDesdeXp(xpActual));
             boolean xpAplicada = false;
             long xpFinal = xpActual;
             long rangoFinal = rangoActualDb;
+            boolean debeAplicarXp = !historialXpAplicada
+                    && (!semanaDoc.equals(ultimaSemana) || forzarAplicacionPendiente);
 
             Map<String, Object> quinielaUpdate = new HashMap<>();
             quinielaUpdate.put("puntosSemana", (long) aciertosFinales);
@@ -540,6 +789,7 @@ public class QuinielaActivity extends AppCompatActivity {
             historicoUpdate.put("pronosticos", new HashMap<>(pronosticos));
             historicoUpdate.put("puntosSemana", (long) aciertosFinales);
             historicoUpdate.put("xpGanada", (long) xpGanada);
+            historicoUpdate.put("xpAplicada", historialXpAplicada || debeAplicarXp);
             historicoUpdate.put("bonusPleno", bonusPleno);
             historicoUpdate.put("totalPartidos", (long) totalPartidos);
             historicoUpdate.put("partidos", partidosSnapshot);
@@ -551,17 +801,21 @@ public class QuinielaActivity extends AppCompatActivity {
             }
             transaction.set(historialRef, historicoUpdate, SetOptions.merge());
 
-            if (!semanaDoc.equals(ultimaSemana)) {
+            if (debeAplicarXp) {
                 long nuevoXp = xpActual + xpGanada;
                 long nuevoRango = calcularRangoDesdeXp(nuevoXp);
                 xpFinal = nuevoXp;
                 rangoFinal = nuevoRango;
                 xpAplicada = true;
 
+                String nuevaUltimaSemana = (ultimaSemana.isEmpty() || compararSemanaDoc(semanaDoc, ultimaSemana) > 0)
+                        ? semanaDoc
+                        : ultimaSemana;
+
                 Map<String, Object> userUpdate = new HashMap<>();
                 userUpdate.put("experienciaTotal", nuevoXp);
                 userUpdate.put("rango", nuevoRango);
-                userUpdate.put("ultimaSemanaRecompensada", semanaDoc);
+                userUpdate.put("ultimaSemanaRecompensada", nuevaUltimaSemana);
                 userUpdate.put("updatedAt", FieldValue.serverTimestamp());
                 transaction.set(userRef, userUpdate, SetOptions.merge());
             } else if (puntosSemanaActual != aciertosFinales) {
@@ -573,6 +827,9 @@ public class QuinielaActivity extends AppCompatActivity {
             quinielaCerrada = true;
             experienciaTotal = resultado.xpTotal;
             rango = resultado.rango;
+            if (resultado.xpAplicada) {
+                ultimaSemanaRecompensada = semanaDoc;
+            }
             quinielaSemanaIdGuardada = semanaDoc;
             quinielaLigaIdGuardada = userLigaId;
             actualizarCabecera();
@@ -585,7 +842,19 @@ public class QuinielaActivity extends AppCompatActivity {
                     false,
                     true
             );
+
+            if (procesandoQuinielaPendiente) {
+                procesandoQuinielaPendiente = false;
+                pendienteLiquidacion = null;
+                semanaId = obtenerSemanaIdActual();
+                cargarPerfilYQuiniela();
+            }
         }).addOnFailureListener(e -> {
+            if (procesandoQuinielaPendiente) {
+                procesandoQuinielaPendiente = false;
+                pendienteLiquidacion = null;
+                semanaId = obtenerSemanaIdActual();
+            }
             mostrarEstado(getString(R.string.quiniela_error_calculate), true);
         });
     }
@@ -677,6 +946,7 @@ public class QuinielaActivity extends AppCompatActivity {
         data.put("pronosticos", new HashMap<>(pronosticos));
         data.put("puntosSemana", calcularAciertosActuales());
         data.put("xpGanada", 0L);
+        data.put("xpAplicada", false);
         data.put("bonusPleno", false);
         data.put("totalPartidos", (long) matches.size());
         data.put("partidos", construirSnapshotPartidosHistorico());
@@ -1173,6 +1443,38 @@ public class QuinielaActivity extends AppCompatActivity {
             this.xpAplicada = xpAplicada;
             this.xpTotal = xpTotal;
             this.rango = rango;
+        }
+    }
+
+    private static class PendienteLiquidacion {
+        @NonNull
+        final String semanaDoc;
+        @NonNull
+        final String ligaId;
+        final int jornada;
+        @NonNull
+        final Map<String, String> pronosticos;
+
+        PendienteLiquidacion(@NonNull String semanaDoc,
+                             @NonNull String ligaId,
+                             int jornada,
+                             @NonNull Map<String, String> pronosticos) {
+            this.semanaDoc = semanaDoc;
+            this.ligaId = ligaId;
+            this.jornada = jornada;
+            this.pronosticos = new HashMap<>(pronosticos);
+        }
+    }
+
+    private static class SemanaIdInfo {
+        final int year;
+        final int week;
+        final int jornada;
+
+        SemanaIdInfo(int year, int week, int jornada) {
+            this.year = year;
+            this.week = week;
+            this.jornada = jornada;
         }
     }
 
