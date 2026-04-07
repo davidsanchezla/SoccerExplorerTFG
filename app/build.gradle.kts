@@ -70,4 +70,6 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.github.MKergall:osmbonuspack:6.9.0")
+    implementation("androidx.work:work-runtime:2.9.1")
+    implementation("com.google.guava:guava:33.2.1-android")
 }
