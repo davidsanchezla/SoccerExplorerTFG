@@ -64,13 +64,21 @@ public class BuscadorFragment extends Fragment {
         rvSearchResults.setAdapter(adapter);
 
         adapter.setOnItemClickListener(item -> {
-            if (SECTION_TEAMS.equals(item.section) || SECTION_NATIONAL_TEAMS.equals(item.section)) {
-                if (item.competitionId != null) {
-                    Intent intent = new Intent(requireContext(), TeamDetailsActivity.class);
-                    intent.putExtra(TeamDetailsActivity.EXTRA_COMPETITION_CODE, item.competitionId);
-                    intent.putExtra(TeamDetailsActivity.EXTRA_TEAM_NAME, item.name);
-                    startActivity(intent);
-                }
+            if (!isAdded()) {
+                return;
+            }
+
+            if (SECTION_COMPETITIONS.equals(item.section) && item.competitionId != null) {
+                abrirDetalleLiga(item.name, item.competitionId);
+                return;
+            }
+
+            if ((SECTION_TEAMS.equals(item.section) || SECTION_NATIONAL_TEAMS.equals(item.section))
+                    && item.competitionId != null) {
+                Intent intent = new Intent(requireContext(), TeamDetailsActivity.class);
+                intent.putExtra(TeamDetailsActivity.EXTRA_COMPETITION_CODE, item.competitionId);
+                intent.putExtra(TeamDetailsActivity.EXTRA_TEAM_NAME, item.name);
+                startActivity(intent);
             }
         });
 
@@ -426,6 +434,13 @@ public class BuscadorFragment extends Fragment {
 
     private void ocultarEstado() {
         tvSearchStatus.setVisibility(View.GONE);
+    }
+
+    private void abrirDetalleLiga(@NonNull String competitionName, @NonNull String competitionCode) {
+        Intent intent = new Intent(requireContext(), LigaDetalleActivity.class);
+        intent.putExtra(LigaDetalleActivity.EXTRA_COMPETITION_NAME, competitionName);
+        intent.putExtra(LigaDetalleActivity.EXTRA_COMPETITION_CODE, competitionCode);
+        startActivity(intent);
     }
 
     private static class CompetitionItem {

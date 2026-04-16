@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +20,20 @@ public class PartidosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_MATCH = 1;
+    private static final int TYPE_FOOTER = 2;
 
     private final List<RowItem> items = new ArrayList<>();
+
+    @Nullable
+    private OnLeagueFooterClickListener onLeagueFooterClickListener;
+
+    interface OnLeagueFooterClickListener {
+        void onLeagueFooterClick(@NonNull String competitionName, @NonNull String competitionCode);
+    }
+
+    void setOnLeagueFooterClickListener(@Nullable OnLeagueFooterClickListener listener) {
+        this.onLeagueFooterClickListener = listener;
+    }
 
     void actualizarItems(@NonNull List<RowItem> nuevosItems) {
         items.clear();
@@ -41,6 +54,10 @@ public class PartidosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             View headerView = inflater.inflate(R.layout.item_competicion_header, parent, false);
             return new HeaderViewHolder(headerView);
         }
+        if (viewType == TYPE_FOOTER) {
+            View footerView = inflater.inflate(R.layout.item_competicion_footer, parent, false);
+            return new FooterViewHolder(footerView);
+        }
         View matchView = inflater.inflate(R.layout.item_partido, parent, false);
         return new PartidoViewHolder(matchView);
     }
@@ -50,7 +67,29 @@ public class PartidosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         RowItem rowItem = items.get(position);
 
         if (holder instanceof HeaderViewHolder) {
-            ((HeaderViewHolder) holder).tvCompetitionHeader.setText(rowItem.headerTitle);
+            ((HeaderViewHolder) holder).tvCompetitionHeader.setText(rowItem.competitionName);
+            return;
+        }
+
+        if (holder instanceof FooterViewHolder) {
+            FooterViewHolder footerHolder = (FooterViewHolder) holder;
+            String competitionName = rowItem.competitionName == null ? "" : rowItem.competitionName;
+            String competitionCode = rowItem.competitionCode == null ? "" : rowItem.competitionCode;
+
+            footerHolder.btnViewStandings.setText(
+                    footerHolder.itemView.getContext().getString(
+                            R.string.matches_view_standings_button,
+                            competitionName
+                    )
+            );
+            footerHolder.btnViewStandings.setOnClickListener(v -> {
+                if (onLeagueFooterClickListener == null
+                        || competitionName.trim().isEmpty()
+                        || competitionCode.trim().isEmpty()) {
+                    return;
+                }
+                onLeagueFooterClickListener.onLeagueFooterClick(competitionName, competitionCode);
+            });
             return;
         }
 
@@ -121,27 +160,47 @@ public class PartidosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
+    static class FooterViewHolder extends RecyclerView.ViewHolder {
+        final MaterialButton btnViewStandings;
+
+        FooterViewHolder(@NonNull View itemView) {
+            super(itemView);
+            btnViewStandings = itemView.findViewById(R.id.btnCompetitionFooter);
+        }
+    }
+
     static class RowItem {
         final int type;
         @Nullable
-        final String headerTitle;
+        final String competitionName;
+        @Nullable
+        final String competitionCode;
         @Nullable
         final PartidoItem partido;
 
-        private RowItem(int type, @Nullable String headerTitle, @Nullable PartidoItem partido) {
+        private RowItem(int type,
+                        @Nullable String competitionName,
+                        @Nullable String competitionCode,
+                        @Nullable PartidoItem partido) {
             this.type = type;
-            this.headerTitle = headerTitle;
+            this.competitionName = competitionName;
+            this.competitionCode = competitionCode;
             this.partido = partido;
         }
 
         @NonNull
         static RowItem header(@NonNull String title) {
-            return new RowItem(TYPE_HEADER, title, null);
+            return new RowItem(TYPE_HEADER, title, null, null);
         }
 
         @NonNull
         static RowItem match(@NonNull PartidoItem partido) {
-            return new RowItem(TYPE_MATCH, null, partido);
+            return new RowItem(TYPE_MATCH, null, null, partido);
+        }
+
+        @NonNull
+        static RowItem footer(@NonNull String competitionName, @NonNull String competitionCode) {
+            return new RowItem(TYPE_FOOTER, competitionName, competitionCode, null);
         }
     }
 

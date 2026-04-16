@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -84,8 +85,8 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
         rvHistorial.setLayoutManager(new LinearLayoutManager(this));
         rvHistorial.setAdapter(adapter);
 
-        btnExportarPdf.setOnClickListener(v -> exportarPdf());
-        btnGuardarPdf.setOnClickListener(v -> guardarPdf());
+        btnExportarPdf.setOnClickListener(v -> confirmarExportarPdf());
+        btnGuardarPdf.setOnClickListener(v -> confirmarGuardarPdf());
 
         if (currentUser == null) {
             mostrarError(getString(R.string.historial_error_no_user));
@@ -249,13 +250,13 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
     private void exportarPdf() {
         List<QuinielaHistorialAdapter.QuinielaItem> selected = adapter.getSelectedItems();
         if (selected.isEmpty()) {
-            Toast.makeText(this, "Selecciona al menos una quiniela", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.historial_select_at_least_one, Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnExportarPdf.setEnabled(false);
         btnGuardarPdf.setEnabled(false);
-        btnExportarPdf.setText("Generando...");
+        btnExportarPdf.setText(R.string.historial_generating_button);
 
         String email = currentUser.getEmail();
         String userEmail = email != null ? email : "";
@@ -286,13 +287,13 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
     private void guardarPdf() {
         List<QuinielaHistorialAdapter.QuinielaItem> selected = adapter.getSelectedItems();
         if (selected.isEmpty()) {
-            Toast.makeText(this, "Selecciona al menos una quiniela", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.historial_select_at_least_one, Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnExportarPdf.setEnabled(false);
         btnGuardarPdf.setEnabled(false);
-        btnGuardarPdf.setText("Guardando...");
+        btnGuardarPdf.setText(R.string.historial_saving_button);
 
         String email = currentUser.getEmail();
         String userEmail = email != null ? email : "";
@@ -349,6 +350,36 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
         });
     }
 
+    private void confirmarExportarPdf() {
+        List<QuinielaHistorialAdapter.QuinielaItem> selected = adapter.getSelectedItems();
+        if (selected.isEmpty()) {
+            Toast.makeText(this, R.string.historial_select_at_least_one, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.historial_confirm_export_title)
+                .setMessage(getString(R.string.historial_confirm_export_message, selected.size()))
+                .setPositiveButton(R.string.historial_confirm_export_yes, (dialog, which) -> exportarPdf())
+                .setNegativeButton(R.string.historial_confirm_export_no, null)
+                .show();
+    }
+
+    private void confirmarGuardarPdf() {
+        List<QuinielaHistorialAdapter.QuinielaItem> selected = adapter.getSelectedItems();
+        if (selected.isEmpty()) {
+            Toast.makeText(this, R.string.historial_select_at_least_one, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.historial_confirm_save_title)
+                .setMessage(getString(R.string.historial_confirm_save_message, selected.size()))
+                .setPositiveButton(R.string.historial_confirm_save_yes, (dialog, which) -> guardarPdf())
+                .setNegativeButton(R.string.historial_confirm_save_no, null)
+                .show();
+    }
+
     private void compartirPdf(File pdfFile) {
         try {
             var uri = FileProvider.getUriForFile(
@@ -398,7 +429,7 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
-                Toast.makeText(this, "Concede permiso de notificaciones para ver el aviso", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.historial_notifications_permission_hint, Toast.LENGTH_LONG).show();
                 return;
             }
         }
@@ -416,10 +447,10 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_app)
-                .setContentTitle("PDF guardado")
-                .setContentText(fileName + " - Toca para abrir")
+                .setContentTitle(getString(R.string.historial_notification_title))
+                .setContentText(getString(R.string.historial_notification_text_format, fileName))
                 .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(fileName + "\nGuardado en Descargas.\nToca para ver el archivo."))
+                        .bigText(getString(R.string.historial_notification_big_text_format, fileName)))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -429,7 +460,7 @@ public class QuinielaHistorialActivity extends AppCompatActivity {
         try {
             notificationManager.notify(NOTIFICATION_ID, builder.build());
         } catch (SecurityException e) {
-            Toast.makeText(this, "No se pudo mostrar la notificación. Permiso denegado.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.historial_notification_permission_denied, Toast.LENGTH_LONG).show();
         }
     }
 

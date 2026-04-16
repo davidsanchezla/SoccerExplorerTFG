@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -149,7 +150,7 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
             }
         });
 
-        btnGuardarEquipo.setOnClickListener(v -> guardarEquipoFavorito());
+        btnGuardarEquipo.setOnClickListener(v -> confirmarGuardadoEquipoFavorito());
     }
     // endregion
 
@@ -330,6 +331,29 @@ public class ElegirEquipoFavActivity extends AppCompatActivity {
     // endregion
 
     // region Guardado favorito
+    private void confirmarGuardadoEquipoFavorito() {
+        if (ligaSeleccionada == null) {
+            Toast.makeText(this, R.string.fav_team_error_select_league, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (equipoSeleccionado == null) {
+            Toast.makeText(this, R.string.fav_team_error_select_team, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.fav_team_confirm_title)
+                .setMessage(getString(
+                        R.string.fav_team_confirm_message,
+                        equipoSeleccionado.nombre,
+                        ligaSeleccionada.nombre
+                ))
+                .setPositiveButton(R.string.fav_team_confirm_yes, (dialog, which) -> guardarEquipoFavorito())
+                .setNegativeButton(R.string.fav_team_confirm_no, null)
+                .show();
+    }
+
     private void guardarEquipoFavorito() {
         if (ligaSeleccionada == null) {
             Toast.makeText(this, R.string.fav_team_error_select_league, Toast.LENGTH_SHORT).show();

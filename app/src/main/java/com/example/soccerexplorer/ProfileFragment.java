@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -105,7 +106,7 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
-        btnProfileLogout.setOnClickListener(v -> cerrarSesion());
+        btnProfileLogout.setOnClickListener(v -> confirmarCierreSesion());
     }
 
     @Override
@@ -122,6 +123,19 @@ public class ProfileFragment extends Fragment {
         Intent intent = new Intent(requireContext(), LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+    }
+
+    private void confirmarCierreSesion() {
+        if (!isAdded()) {
+            return;
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.profile_logout_confirm_title)
+                .setMessage(R.string.profile_logout_confirm_message)
+                .setPositiveButton(R.string.profile_logout_confirm_yes, (dialog, which) -> cerrarSesion())
+                .setNegativeButton(R.string.profile_logout_confirm_no, null)
+                .show();
     }
 
     private void cargarDatosBasicosPerfil() {

@@ -63,6 +63,10 @@
     <string name="fav_team_selection_one">1 equipo seleccionado: %1$s</string>
     <string name="fav_team_saved">Equipo favorito guardado.</string>
     <string name="fav_team_error_save">No se pudo guardar tu equipo favorito.</string>
+    <string name="fav_team_confirm_title">Confirmar equipo favorito</string>
+    <string name="fav_team_confirm_message">Vas a guardar %1$s (%2$s) como equipo favorito. ¿Quieres continuar?</string>
+    <string name="fav_team_confirm_yes">Si, guardar</string>
+    <string name="fav_team_confirm_no">No</string>
     <string name="error_loading_profile">No se pudo cargar tu perfil. Intentalo de nuevo.</string>
 
     <string name="tab_home">Inicio</string>
@@ -95,6 +99,40 @@
     <string name="matches_error_parse">No se pudo procesar la respuesta de partidos.</string>
     <string name="matches_empty">No hay partidos para la jornada seleccionada.</string>
     <string name="matches_empty_date">No hay partidos para %1$s.</string>
+    <string name="matches_view_standings_default">Ver clasificacion</string>
+    <string name="matches_view_standings_button">Ver clasificacion de %1$s</string>
+
+    <string name="liga_filter_label">Liga</string>
+    <string name="liga_matchday_label">Jornada</string>
+    <string name="liga_matchday_item">Jornada %1$d</string>
+    <string name="liga_matchday_subtitle_format">Partidos de la jornada %1$d en %2$s</string>
+    <string name="liga_matchday_not_found">No se pudo detectar la jornada actual de esta competicion.</string>
+    <string name="liga_tab_matches">Partidos</string>
+    <string name="liga_tab_standings">Clasificacion</string>
+    <string name="liga_tab_stats">Estadisticas</string>
+    <string name="liga_matches_subtitle_format">Partidos del %1$s</string>
+    <string name="liga_standings_subtitle_format">Clasificacion general de %1$s</string>
+    <string name="liga_stats_subtitle_format">Estadisticas oficiales de %1$s</string>
+    <string name="liga_matchday_time_format">Jornada %1$d · %2$s</string>
+    <string name="liga_points_short">%1$d pts</string>
+    <string name="liga_table_stats_format">PJ %1$d · G %2$d · E %3$d · P %4$d · DG %5$d</string>
+    <string name="liga_assists_short">Asis: %1$d</string>
+    <string name="liga_assists_short_unknown">Asis: -</string>
+    <string name="liga_scorer_numbers_format">Goles: %1$d · %2$s · PJ: %3$d</string>
+    <string name="liga_error_missing_api_key">Falta configurar FOOTBALL_DATA_API_KEY en local.properties.</string>
+    <string name="liga_error_invalid_api_key">Clave football-data invalida o sin permisos.</string>
+    <string name="liga_error_not_available_competition">No hay datos disponibles para esta competicion.</string>
+    <string name="liga_error_rate_limit">Demasiadas peticiones a football-data. Espera un momento e intentalo de nuevo.</string>
+    <string name="liga_error_network">Error de red consultando datos de la liga.</string>
+    <string name="liga_error_api_generic">Error football-data (%1$d).</string>
+    <string name="liga_error_parse_matches">No se pudo procesar la respuesta de partidos de la liga.</string>
+    <string name="liga_error_parse_standings">No se pudo procesar la clasificacion de la liga.</string>
+    <string name="liga_error_parse_stats">No se pudo procesar las estadisticas de la liga.</string>
+    <string name="liga_matches_empty">No hay partidos para %1$s en esta liga.</string>
+    <string name="liga_matches_empty_matchday">No hay partidos para la jornada %1$d.</string>
+    <string name="liga_standings_empty">No hay clasificacion disponible para esta liga ahora mismo.</string>
+    <string name="liga_stats_empty">No hay estadisticas disponibles para esta liga ahora mismo.</string>
+
     <string name="tab_map_placeholder_title">Mapa</string>
     <string name="tab_map_placeholder_message">Aqui ira la vista de mapa.</string>
     <string name="map_title">Mapa OpenStreetMap</string>
@@ -104,6 +142,13 @@
     <string name="map_error_load_leagues">No se pudieron cargar las ligas del mapa.</string>
     <string name="map_empty_teams_coordinates">No hay equipos con coordenadas validas en esta liga.</string>
     <string name="map_error_load_teams">No se pudieron cargar los equipos de esta liga.</string>
+    <string name="map_status_syncing_teams">Sincronizando equipos y coordenadas desde API...</string>
+    <string name="map_error_sync_missing_api_key">Falta FOOTBALL_DATA_API_KEY para sincronizar el mapa.</string>
+    <string name="map_error_sync_teams_api">No se pudieron obtener equipos desde football-data.</string>
+    <string name="map_error_sync_parse_teams">No se pudieron procesar los equipos descargados.</string>
+    <string name="map_error_sync_empty_teams">La API no devolvio equipos para esta competicion.</string>
+    <string name="map_error_sync_no_coordinates">No se pudieron calcular coordenadas para los equipos.</string>
+    <string name="map_error_sync_firestore">No se pudieron guardar los equipos en la base de datos.</string>
     <string name="map_team_location_unknown">Ubicacion no disponible</string>
     <string name="map_team_snippet_stadium_city">%1$s - %2$s</string>
     <string name="tab_search_placeholder_title">Buscador</string>
@@ -133,6 +178,10 @@
     <string name="profile_quiniela_button">Quiniela</string>
     <string name="profile_change_team_button">Cambiar equipo</string>
     <string name="profile_logout_button">Cerrar sesion</string>
+    <string name="profile_logout_confirm_title">Cerrar sesion</string>
+    <string name="profile_logout_confirm_message">Si cierras sesion, volveras a la pantalla de inicio de sesion. ¿Estas seguro?</string>
+    <string name="profile_logout_confirm_yes">Si, cerrar sesion</string>
+    <string name="profile_logout_confirm_no">No</string>
     <string name="profile_quiniela_placeholder">Quiniela proximamente.</string>
     <string name="profile_value_not_logged">No has iniciado sesion</string>
     <string name="profile_value_not_available">No disponible</string>
@@ -220,6 +269,24 @@
     <string name="historial_pdf_share_title">Compartir PDF</string>
     <string name="historial_pdf_error">Error al generar el PDF.</string>
     <string name="historial_pdf_success">PDF generado correctamente.</string>
+    <string name="historial_select_at_least_one">Selecciona al menos una quiniela.</string>
+    <string name="historial_generating_button">Generando...</string>
+    <string name="historial_saving_button">Guardando...</string>
+    <string name="historial_confirm_export_title">Compartir PDF</string>
+    <string name="historial_confirm_export_message">Se va a generar y compartir un PDF con %1$d quinielas seleccionadas. ¿Continuar?</string>
+    <string name="historial_confirm_export_yes">Si, compartir</string>
+    <string name="historial_confirm_export_no">No</string>
+    <string name="historial_confirm_save_title">Guardar PDF</string>
+    <string name="historial_confirm_save_message">Se va a generar y guardar en Descargas un PDF con %1$d quinielas seleccionadas. ¿Continuar?</string>
+    <string name="historial_confirm_save_yes">Si, guardar</string>
+    <string name="historial_confirm_save_no">No</string>
+    <string name="historial_notifications_permission_hint">Concede permiso de notificaciones para ver el aviso.</string>
+    <string name="historial_notification_title">PDF guardado</string>
+    <string name="historial_notification_text_format">%1$s - Toca para abrir</string>
+    <string name="historial_notification_big_text_format">%1$s
+Guardado en Descargas.
+Toca para ver el archivo.</string>
+    <string name="historial_notification_permission_denied">No se pudo mostrar la notificacion. Permiso denegado.</string>
     <string name="profile_historial_button">Historial Quinielas</string>
     <string name="team_crest">Escudo del equipo</string>
     <string name="team_details_title">Detalles del equipo</string>

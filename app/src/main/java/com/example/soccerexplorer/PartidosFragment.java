@@ -1,5 +1,6 @@
 package com.example.soccerexplorer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -115,6 +116,9 @@ public class PartidosFragment extends Fragment {
         rvMatches = view.findViewById(R.id.rvMatches);
 
         partidosAdapter = new PartidosAdapter();
+        partidosAdapter.setOnLeagueFooterClickListener((competitionName, competitionCode) ->
+                abrirDetalleLiga(competitionName, competitionCode)
+        );
         rvMatches.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvMatches.setAdapter(partidosAdapter);
 
@@ -285,9 +289,33 @@ public class PartidosFragment extends Fragment {
             for (PartidosAdapter.PartidoItem partido : unique.values()) {
                 rows.add(PartidosAdapter.RowItem.match(partido));
             }
+
+            String competitionCode = getCompetitionCode(entry.getKey());
+            if (!competitionCode.isEmpty()) {
+                rows.add(PartidosAdapter.RowItem.footer(entry.getKey(), competitionCode));
+            }
         }
 
         return rows;
+    }
+
+    @NonNull
+    private String getCompetitionCode(@NonNull String competitionName) {
+        LigaInfo ligaInfo = LIGAS.get(competitionName);
+        if (ligaInfo == null || ligaInfo.apiCode == null) {
+            return "";
+        }
+        return ligaInfo.apiCode;
+    }
+
+    private void abrirDetalleLiga(@NonNull String competitionName, @NonNull String competitionCode) {
+        if (!isAdded()) {
+            return;
+        }
+        Intent intent = new Intent(requireContext(), LigaDetalleActivity.class);
+        intent.putExtra(LigaDetalleActivity.EXTRA_COMPETITION_NAME, competitionName);
+        intent.putExtra(LigaDetalleActivity.EXTRA_COMPETITION_CODE, competitionCode);
+        startActivity(intent);
     }
 
     @NonNull
