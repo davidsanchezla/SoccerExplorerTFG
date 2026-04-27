@@ -32,8 +32,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +51,9 @@ public class LigaDetalleActivity extends AppCompatActivity {
     private static final ZoneId APP_ZONE = ZoneId.of("Europe/Madrid");
     private static final Locale APP_LOCALE = new Locale("es", "ES");
     private static final DateTimeFormatter MATCH_META_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", APP_LOCALE);
+
+    private static final Map<String, List<Integer>> jornadasCache = new HashMap<>();
+    private static final long CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000L;
 
     private static final String ESTADO_LIVE = "IN_PLAY";
     private static final String ESTADO_PAUSED = "PAUSED";
@@ -87,6 +92,9 @@ public class LigaDetalleActivity extends AppCompatActivity {
     private int requestSequence = 0;
     private volatile int activeRequestId = 0;
 
+    private android.content.SharedPreferences prefsJornadas;
+    private long cacheTimestamp = 0;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -114,6 +122,8 @@ public class LigaDetalleActivity extends AppCompatActivity {
         recyclerView.setAdapter(partidosAdapter);
 
         executorService = Executors.newSingleThreadExecutor();
+
+        prefsJornadas = getSharedPreferences("jornadas_cache", MODE_PRIVATE);
 
         leerExtrasIniciales();
         actualizarCabecera();
@@ -219,6 +229,29 @@ public class LigaDetalleActivity extends AppCompatActivity {
             }
 
             int jornadaObjetivo = obtenerJornadaObjetivo(selectedCompetitionCode);
+            List<Integer> jornadas = obtenerJornadasDesdeCache(selectedCompetitionCode);
+
+            if (jornadas != null && !jornadas.isEmpty()) {
+                if (jornadaObjetivo > 0 && !jornadas.contains(jornadaObjetivo)) {
+                    jornadas.add(jornadaObjetivo);
+                    Collections.sort(jornadas);
+                }
+
+                final List<Integer> jornadasFinal = new ArrayList<>(jornadas);
+                int jornadaInicial = seleccionarJornadaInicial(jornadas, jornadaObjetivo);
+                final int jornadaInicialFinal = jornadaInicial;
+
+                runOnUiThread(() -> {
+                    if (!esRequestVigente(requestId)) {
+                        return;
+                    }
+                    selectedMatchday = jornadaInicialFinal;
+                    actualizarOpcionesJornadas(jornadasFinal, jornadaInicialFinal);
+                    actualizarSubtitulo();
+                    cargarDatosActuales();
+                });
+                return;
+            }
 
             ApiResult allMatchesResult = ejecutarGet("/competitions/" + selectedCompetitionCode + "/matches");
             if (!allMatchesResult.ok && jornadaObjetivo <= 0) {
@@ -226,13 +259,16 @@ public class LigaDetalleActivity extends AppCompatActivity {
                 return;
             }
 
-            List<Integer> jornadas;
             try {
                 jornadas = allMatchesResult.ok
                         ? extraerJornadasDisponibles(allMatchesResult.body)
                         : new ArrayList<>();
             } catch (Exception e) {
                 jornadas = new ArrayList<>();
+            }
+
+            if (!jornadas.isEmpty()) {
+                guardarJornadasEnCache(selectedCompetitionCode, jornadas);
             }
 
             if (jornadaObjetivo > 0 && !jornadas.contains(jornadaObjetivo)) {
@@ -261,6 +297,51 @@ public class LigaDetalleActivity extends AppCompatActivity {
                 cargarDatosActuales();
             });
         });
+    }
+
+    @Nullable
+    private List<Integer> obtenerJornadasDesdeCache(@NonNull String competitionCode) {
+        if (jornadasCache.containsKey(competitionCode)) {
+            return new ArrayList<>(jornadasCache.get(competitionCode));
+        }
+
+        String cachedJson = prefsJornadas.getString("jornadas_" + competitionCode, null);
+        long cachedTime = prefsJornadas.getLong("timestamp_" + competitionCode, 0);
+
+        if (cachedJson != null && cachedTime > 0) {
+            long elapsed = System.currentTimeMillis() - cachedTime;
+            if (elapsed < CACHE_EXPIRY_MS) {
+                try {
+                    String[] parts = cachedJson.split(",");
+                    List<Integer> cached = new ArrayList<>();
+                    for (String p : parts) {
+                        int val = Integer.parseInt(p.trim());
+                        cached.add(val);
+                    }
+                    jornadasCache.put(competitionCode, cached);
+                    return cached;
+                } catch (NumberFormatException e) {
+                    // invalid cache
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void guardarJornadasEnCache(@NonNull String competitionCode, @NonNull List<Integer> jornadas) {
+        jornadasCache.put(competitionCode, new ArrayList<>(jornadas));
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < jornadas.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append(jornadas.get(i));
+        }
+
+        prefsJornadas.edit()
+                .putString("jornadas_" + competitionCode, sb.toString())
+                .putLong("timestamp_" + competitionCode, System.currentTimeMillis())
+                .apply();
     }
 
     private void actualizarOpcionesJornadas(@NonNull List<Integer> jornadas, int jornadaSeleccionada) {
