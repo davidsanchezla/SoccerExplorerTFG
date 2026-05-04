@@ -179,9 +179,10 @@ public class NoticiasFragment extends Fragment {
     }
 
     @Nullable
-    private List<NoticiasAdapter.NoticiaItem> solicitarNoticiasConFallback(@NonNull String equipo,
-                                                                            @NonNull String queryFutbol,
-                                                                            @NonNull String querySoloEquipo) throws Exception {
+    // made package-private for testing
+    List<NoticiasAdapter.NoticiaItem> solicitarNoticiasConFallback(@NonNull String equipo,
+                                                                    @NonNull String queryFutbol,
+                                                                    @NonNull String querySoloEquipo) throws Exception {
         ApiResponse intentoTopHeadlines = ejecutarRequest(construirUrlTopHeadlines(queryFutbol));
         if (!intentoTopHeadlines.isOk()) {
             publicarError(obtenerMensajeErrorApi(intentoTopHeadlines.responseCode, intentoTopHeadlines.body));
@@ -239,21 +240,24 @@ public class NoticiasFragment extends Fragment {
     }
 
     @NonNull
-    private String construirUrlTopHeadlines(@NonNull String query) throws Exception {
+    // package-private for testing
+    String construirUrlTopHeadlines(@NonNull String query) throws Exception {
         String queryEncoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name());
         return "https://newsapi.org/v2/top-headlines?country=es&category=sports&pageSize="
                 + NEWS_PAGE_SIZE + "&q=" + queryEncoded;
     }
 
     @NonNull
-    private String construirUrlEverything(@NonNull String query) throws Exception {
+    // package-private for testing
+    String construirUrlEverything(@NonNull String query) throws Exception {
         String queryEncoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name());
         return "https://newsapi.org/v2/everything?language=es&pageSize=" + NEWS_PAGE_SIZE
                 + "&sortBy=relevancy&searchIn=title,description&q=" + queryEncoded;
     }
 
     @NonNull
-    private ApiResponse ejecutarRequest(@NonNull String endpoint) throws Exception {
+    // package-private for testing (allows mocking via MockWebServer endpoints)
+    ApiResponse ejecutarRequest(@NonNull String endpoint) throws Exception {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(endpoint);
@@ -280,7 +284,8 @@ public class NoticiasFragment extends Fragment {
     }
 
     @NonNull
-    private String leerInputStream(@Nullable InputStream inputStream) throws Exception {
+    // package-private for testing
+    String leerInputStream(@Nullable InputStream inputStream) throws Exception {
         if (inputStream == null) {
             return "";
         }
@@ -296,8 +301,9 @@ public class NoticiasFragment extends Fragment {
     }
 
     @NonNull
-    private List<NoticiasAdapter.NoticiaItem> parsearNoticias(@NonNull String response,
-                                                              @NonNull String equipo) throws Exception {
+    // package-private for testing
+    List<NoticiasAdapter.NoticiaItem> parsearNoticias(@NonNull String response,
+                                                      @NonNull String equipo) throws Exception {
         List<NoticiasAdapter.NoticiaItem> noticias = new ArrayList<>();
         List<String> terminosEquipo = obtenerTerminosEquipoFiltro(equipo);
         JSONObject root = new JSONObject(response);
@@ -583,7 +589,7 @@ public class NoticiasFragment extends Fragment {
         startActivity(intent);
     }
 
-    private static class ApiResponse {
+    static class ApiResponse {
         final int responseCode;
         @NonNull
         final String body;
